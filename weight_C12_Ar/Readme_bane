@@ -1,0 +1,55 @@
+Readme for monte carlo weigthing code
+
+In order to run this weight script you need 3 files
+/////////////////////////////////////////////////////////////////////////////////////////////////
+File 1												/
+input_run"RUN#".dat in the mcrun_info dir.							/
+This file contains information about the monte carlo run.					/
+This file is formated as: (without the back slashes and without the data labels)		/
+/////////////////////////
+
+run.rzdat (name of the monte carlo histogram file)
+1000000   (# of events simulated)
+1000000   (# of max events)
+100.	  (max delta x or dxp)
+100.	  (max delta y of dyp)
+10.	  (delta E` positive)
+-10.	  (delta E` negative)
+0	  (Coulomb correction 1 = on : 0 = off)
+1         (radiative corrections 1 = on : 0 = off)
+
+
+////////////////////////////
+
+
+FILE 2
+run"RUN#".in in datarun_info
+This file contains information about the replayed data run
+This file is formated as:
+////////////////////////////////////////////////////////////////////////////////
+Target# BeamE(Gev)	E`	theta(deg)	prescale_factor current_bcm1(uA) current_bcm2	Charge_bcm1	Charge_bcm2	Computer_LT	Electronic_LT	Track_efficency	Trigger_eff	rate 
+
+////////////////////////////////////////////////////////////////////////////////
+example: run731.in
+//////////////////////////////////////////////////////////////////////////////////
+4  2.222        2.03        15.5        15        10.        10.    2644.1       2644.1          0.983854   1.       0.966789        1.        1.
+//////////////////////////////////////
+
+FILE 3
+
+run"RUN#.rzdat in rzdat
+I have done this my making a link for run"RUN#".rzdat to ../../phase_space_fall16/worksim/carbon_foil_ar_"RUN#".rzdat
+Where carbon_foil_ar_"RUN#" was the name of the input file for the monte carlo.
+This file is the output histogram file from the monte carlo
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+In order to run this code, you can use the shell script monte_carlo.sh
+type : sh monte_carlo.sh RUN#
+
+This will complete a set of symbolic links and then run the weighting code. It will also creat a root file and store the root file and the output rzdat file in their directories. 
+
+
+
+
+
+

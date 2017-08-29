@@ -1,0 +1,16 @@
+#########
+#########
+This is a README for the mcrun_info dir.
+
+This directory contains the informaiton for each monte carlo run.
+In the files you need provide the  following informantion
+
+	File name
+	number of generated events
+	Max number of events analyzed
+	deltaX
+	delta
+	delup
+	deldown
+	coloumb flag (0 or 1)
+	rad. cor flag (0 or 1)

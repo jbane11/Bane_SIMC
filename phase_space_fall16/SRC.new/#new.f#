@@ -1,0 +1,418 @@
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c F1F209.f
+c Package of FORTRAN subroutine describing fits to inclusive inelastic
+c electron scattering from proton, neutron, deuteron, or heaviere nuclei
+c Proton fit is described in:
+c   M.E. Christy and P.E. Bosted, ``Empirical Fit to Precision 
+c    Inclusive Electron-Proton Cross Sections in the Resonance Region'',
+c    (arXiv:0712.3731). Submitted to Phys. Rev. C.
+c Deuteron (and netron) fit is described in:
+c    P.E. Bosted and M.E. Christy, ``Empirical Fit to Inelastic 
+c    Electron-Deuteron and Electron-Neutron
+c    Resonance Region Transverse Cross Sections, 
+c    (arXiv:0711.0159), publichished in Phys. Rev. C 77, 065206 (2008). (
+c New fits for A>2 by Vahe M. and Peter B. (to be publsihed).
+c
+c routine in this package:
+c Main program test. Compiling and linking all code
+c    in this package will make a "test" program.
+c    Upon execution, the output should be:
+c  1.000  1.500  0.617  0.204  0.231  0.312  0.410  1.644  0.072  0.102
+c  1.000  2.000  0.472  0.129  0.159  0.292  0.250  2.329  0.199  0.191
+c  1.000  2.500  0.382  0.169  0.227  0.417  0.360  2.973  0.241  0.292
+c  1.000  3.000  0.321  0.224  0.315  0.511  0.500  3.562  0.327  0.359
+c  1.000  3.500  0.276  0.218  0.309  0.517  0.521  4.060  0.348  0.387
+c  2.000  1.500  0.763  0.079  0.091  0.110  0.104  0.400  0.154  0.188
+c  2.000  2.000  0.641  0.058  0.091  0.157  0.104  0.764  0.184  0.216
+c  2.000  2.500  0.553  0.090  0.139  0.241  0.162  1.174  0.215  0.246
+c  2.000  3.000  0.485  0.137  0.214  0.324  0.252  1.558  0.233  0.270
+c  2.000  3.500  0.433  0.136  0.227  0.354  0.272  1.919  0.267  0.283
+c   1.000   0.747   0.432
+c   2.000   0.157   0.132
+c   3.000   0.048   0.049
+c
+c
+c subroutine F1F2IN09. Returns inelastic F1, F2, and R for
+c      nucleus with charge Z and atomic number A
+c      for given value of Q2 and W**2. F1 and F2
+c      are per nucleus (not per nucleon).
+c subroutine pind. Returns F1, R, Sigma_L, and Sigma_T
+c      for a proton with Fermi motion of a detueron
+c subroutine resd. Returns F1 for a deuteron.
+c subroutine resder. Returns error on F1 from fit.
+c      Requires auxillary file "F1F207D2emat.dat"
+c subroutine resmodd. Returns F1 for average of a free
+c      proton and neutron
+c subroutine christy507. Returns F1, R, sigma_L, and
+c      sigma_T for the free proton.
+c subroutine resmod507. Returns sigma_L or sigma_T
+c      (called by christy507)
+c subroutine mec. Called by resd to get extra terms
+c      for dip region between quasi-elastic and Delta
+c funtion fitemc. Fit to "EMC effect" used to 
+c      get F1 and F2 for A>2
+c 
+c subroutine F1F2QE09. Returns quasi-elastic F1, F2 for
+c      nucleus with charge Z and atomic number A
+c      for given value of Q2 and W**2
+c 
+      implicit none
+      integer iq,iw
+      real*8 q2,w2,F1n,F2n,r,F1p,F2p,F1d,F2d,F1c,F2c
+      real*8 f1dqe, f2dqe, nu, x, am/0.9383/, F1be, F2be,rbe
+
+      do iq=1,2
+       q2 = 1.0 * iq
+       do iw=1,5
+        w2 = 1. + 0.5*iw
+        nu = (w2 - am**2 + q2) / 2. / am
+        x = q2 / 2. / am / nu
+        call F1F2IN09(0.D0, 1.D0, q2, w2, F1n, F2n,r)
+        call F1F2IN09(1.D0, 1.D0, q2, w2, F1p, F2p,r)
+        call F1F2IN09(1.D0, 2.D0, q2, w2, F1d, F2d,r)
+        call F1F2IN09(4.D0, 9.D0, q2, w2, F1be, F2be,rbe)
+        write(6,'(10f7.3)') q2,w2,x,f2n,f2p,f2d,
+     >    f1p,f1be,r,rbe
+       enddo
+      enddo
+      do iq=1,3
+        q2 = 1.0 * iq
+        w2 = am**2
+        call F1F2QE09(1.D0, 2.D0, q2, w2, F1dqe, F2dqe)
+        write(6,'(3f8.3)') q2, F1dqe, F2dqe
+      enddo
+
+      stop
+      end
+
+
+C=======================================================================
+                                                                        
+      SUBROUTINE F1F2IN09(Z, A, QSQ, Wsq, F1, F2, rc)                       
+!--------------------------------------------------------------------
+! Fit to inelastic cross sections for A(e,e')X
+! valid for all W<3 GeV and all Q2<10 GeV2
+! 
+! Inputs: Z, A (real*8) are Z and A of nucleus 
+!         (use Z=0., A=1. to get free neutron)
+c         Qsq (real*8) is 4-vector momentum transfer squared (positive in
+c                     chosen metric)
+c         Wsq (real*8) is invarinat mass squared of final state calculated
+c                     assuming electron scattered from a free proton
+c                 
+c outputs: F1, F2 (real*8) are structure functions per nucleus
+! Version of 10/20/2006 P. Bosted
+!--------------------------------------------------------------------
+      implicit none
+      REAL*8 P(0:23)
+      COMMON/PARCORR/P
+      real*8 Z,A,qsq,wsq,w,f1c,x
+      real*8 avgn,r,dr,nu,eps,kappa,sigres,flux,siglp,sigtp,F1pp,F1dp
+      REAL*8 W1,W2,sigt,rc,w1pb,w2pb,F1,F2,sigl,F1d, F1p,qv
+      REAL*8 W1p,W2P,DW2DPF,WSQP,pf,kf,es,dw2des,fyuse
+      real a4, x4, fitemc, emcfac
+      logical goodfit
+      INTEGER ISM
+
+! new variables for Fermi smearing over +/- 3 sigma. Sum of 
+! fy values is 1.000, so no effect if W1 is constant with W
+      REAL*8 XX(15)/-3.000,-2.571,-2.143,-1.714,-1.286,-0.857,
+     >              -0.429, 0.000, 0.429, 0.857, 1.286, 1.714, 
+     >               2.143, 2.571, 3.000/
+      real*8 fy(15)/0.0019, 0.0063, 0.0172, 0.0394, 0.0749, 0.1186, 
+     >              0.1562, 0.1712, 0.1562, 0.1186, 0.0749, 0.0394, 
+     >              0.0172, 0.0063, 0.0019/
+
+! This is for exp(-xx**2/2.), from teste.f
+       real*8 xxp(99)/
+     > -3.000,-2.939,-2.878,-2.816,-2.755,-2.694,-2.633,-2.571,-2.510,
+     > -2.449,-2.388,-2.327,-2.265,-2.204,-2.143,-2.082,-2.020,-1.959,
+     > -1.898,-1.837,-1.776,-1.714,-1.653,-1.592,-1.531,-1.469,-1.408,
+     > -1.347,-1.286,-1.224,-1.163,-1.102,-1.041,-0.980,-0.918,-0.857,
+     > -0.796,-0.735,-0.673,-0.612,-0.551,-0.490,-0.429,-0.367,-0.306,
+     > -0.245,-0.184,-0.122,-0.061, 0.000, 0.061, 0.122, 0.184, 0.245,
+     >  0.306, 0.367, 0.429, 0.490, 0.551, 0.612, 0.673, 0.735, 0.796,
+     >  0.857, 0.918, 0.980, 1.041, 1.102, 1.163, 1.224, 1.286, 1.347,
+     >  1.408, 1.469, 1.531, 1.592, 1.653, 1.714, 1.776, 1.837, 1.898,
+     >  1.959, 2.020, 2.082, 2.143, 2.204, 2.265, 2.327, 2.388, 2.449,
+     >  2.510, 2.571, 2.633, 2.694, 2.755, 2.816, 2.878, 2.939, 3.000/
+! these are 100x bigger for convenience
+       real*8 fyp(99)/
+     > 0.0272,0.0326,0.0390,0.0464,0.0551,0.0651,0.0766,0.0898,0.1049,
+     > 0.1221,0.1416,0.1636,0.1883,0.2159,0.2466,0.2807,0.3182,0.3595,
+     > 0.4045,0.4535,0.5066,0.5637,0.6249,0.6901,0.7593,0.8324,0.9090,
+     > 0.9890,1.0720,1.1577,1.2454,1.3349,1.4254,1.5163,1.6070,1.6968,
+     > 1.7849,1.8705,1.9529,2.0313,2.1049,2.1731,2.2350,2.2901,2.3379,
+     > 2.3776,2.4090,2.4317,2.4454,2.4500,2.4454,2.4317,2.4090,2.3776,
+     > 2.3379,2.2901,2.2350,2.1731,2.1049,2.0313,1.9529,1.8705,1.7849,
+     > 1.6968,1.6070,1.5163,1.4254,1.3349,1.2454,1.1577,1.0720,0.9890,
+     > 0.9090,0.8324,0.7593,0.6901,0.6249,0.5637,0.5066,0.4535,0.4045,
+     > 0.3595,0.3182,0.2807,0.2466,0.2159,0.1883,0.1636,0.1416,0.1221,
+     > 0.1049,0.0898,0.0766,0.0651,0.0551,0.0464,0.0390,0.0326,0.0272/
+
+      integer iz,ia,i
+      real PM/0.93828/,THCNST/0.01745329/,ALPHA/137.0388/        
+      real*8 PI/3.1415926535D0/
+
+! deuteron fit parameters
+       real*8 xvald0(50)/
+     >  0.1964E+01, 0.1086E+01, 0.5313E-02, 0.1265E+01, 0.8000E+01,
+     >  0.2979E+00, 0.1354E+00, 0.2200E+00, 0.8296E-01, 0.9578E-01,
+     >  0.1094E+00, 0.3794E+00, 0.8122E+01, 0.5189E+01, 0.3290E+01,
+     >  0.1870E+01, 0.6110E+01,-0.3464E+02, 0.9000E+03, 0.1717E+01,
+     >  0.4335E-01, 0.1915E+03, 0.2232E+00, 0.2119E+01, 0.2088E+01,
+     > -0.3029E+00, 0.2012E+00, 0.1104E-02, 0.2276E-01,-0.4562E+00,
+     >  0.2397E+00, 0.1204E+01, 0.2321E-01, 0.5419E+03, 0.2247E+00,
+cc     
+       real*8 F1M
+       logical DEBUG/.TRUE./
+
+      IA = int(A)
+      avgN = A - Z
+      nu = (wsq - pm**2 + qsq) / 2. / pm
+      qv = sqrt(nu**2 + qsq)
+
+      if(Wsq.le.0.0) W = 0.0
+      W  = sqrt(Wsq)
+      x  = QSQ / (2.0 * pm * nu)
+      if(Wsq.le.0.0) x = 0.0
+
+! Cross section for proton or neutron
+      W1 = 0.
+      W2 = 0.
+      IF(IA .lt. 2 .and. wsq.gt.1.155) THEN
+        call CHRISTY507(Wsq,Qsq,F1p,Rc,sigt,sigl)
+! If neutron, subtract proton from deuteron. Factor of two to
+! convert from per nucleon to per deuteron
+        if(Z .lt. 0.5) then
+          call resmodd(wsq,qsq,xvald0,F1d)
+          F1p = F1d * 2.0 - F1p
+        endif
+        W1 = F1p / PM 
+        W2 = W1 * (1. + Rc) / (1. + nu**2 / qsq)
+      ENDIF
+
+! For deuteron
+      if(IA .eq. 2) then
+c get Fermi-smeared R from Erics proton fit
+        call pind(Wsq, Qsq, F1c, Rc, sigt, sigl)
+c get fit to F1 in deuteron, per nucleon
+        call resd(qsq, wsq, xvald0, F1d)
+c convert to W1 per deuteron
+        W1 = F1d / PM * 2.0
+        W2 = W1 * (1. + Rc) / (1. + nu**2 / qsq)
+      endif
+
+! For nuclei
+      IF(IA.gt.2) then
+        sigt = 0.
+        sigl = 0.
+        F1d = 0.
+        F1p = 0.
+! Modifed to use Superscaling from Sick, Donnelly, Maieron,
+! nucl-th/0109032
+       if(IA.eq.2) kf=0.085
+        if(iA.eq.2) Es=0.0022
+! changed 4/09
+        if(IA.eq.3) kf=0.115
+        if(iA.eq.3) Es=0.001 
+! changed 4/09
+        if(IA.gt.3) kf=0.19
+        if(iA.gt.3) Es=0.017
+        if(IA.gt.7) kf=0.228
+        if(iA.gt.7) Es=0.020 
+c changed 5/09
+        if(iA.gt.7) Es=0.0165
+        if(IA.gt.16) kf=0.230
+        if(iA.gt.16) Es=0.025 
+        if(IA.gt.25) kf=0.236
+        if(iA.gt.25) Es=0.018 
+        if(IA.gt.38) kf=0.241
+        if(iA.gt.38) Es=0.028 
+        if(IA.gt.55) kf=0.241
+        if(iA.gt.55) Es=0.023 
+        if(IA.gt.60) kf=0.245
+        if(iA.gt.60) Es=0.028 
+! changed 5/09 
+        if(iA.gt.55) Es=0.018 
+ 
+
+! adjust pf to give right width based on kf
+        pf = 0.5 * kf 
+! assume this is 2 * pf * qv
+        DW2DPF = 2. * qv
+        dw2des = 2. * (nu + PM) 
+! switched to using 99 bins!
+cc        do ism = 1,15
+cc          fyuse = fy(ism)
+cc          WSQP = WSQ + XX(ISM) * PF * DW2DPF - es * dw2des
+        do ism = 1,99
+          fyuse = fyp(ism)/100.
+          WSQP = WSQ + XXp(ISM) * PF * DW2DPF - es * dw2des
+          IF(WSQP.GT. 1.159) THEN
+            call CHRISTY507(Wsqp,Qsq,F1pp,Rc,sigtp,siglp)
+            call resmodd(wsqp,qsq,xvald0,F1dp)
+            F1d = F1d + F1dp * Fyuse
+            F1p = F1p + F1pp * Fyuse
+            sigt = sigt + sigtp * Fyuse
+            sigl = sigl + siglp * Fyuse
+          ENDIF
+        ENDDO
+        Rc = 0.
+        if(sigt .gt. 0.) Rc = sigl / sigt
+        W1 = (2. * Z * F1d + (A - 2. * Z) * (2. * F1d - F1p)) / PM 
+
+        W1= W1*(1.0+P(13)*x+P(14)*x**2+P(15)*x**3+P(16)*x**4+P(17)*x**5)
+
+cc        if(W .GT. 1.3) 
+        if(W .GT. 0.0) 
+     >       W1=W1*(1.0+(P(20)*W+P(21)*W**2)/(1.0+P(22)*QSQ))**2
+
+        CALL MEC2009( Z , A , qsq , wsq , F1M )
+
+        W1 = W1 + F1M
+        if(Wsq .gt.0.0 ) Rc = Rc * ( 1.0 + P(6) + P(23)*A )
+        W2 = W1 * (1. + Rc) / (1. + nu**2 / qsq)
+
+        DEBUG=.FALSE.
+        IF( W1 .LE. 0.0 .AND. DEBUG ) THEN 
+           write(*,*) 'test  = ', Z,A,W,QSQ,x,F1M,W1
+           write(*,*) 'test1 = ', 
+     >          (1.0+(P(20)*W+P(21)*W**2)/(1.0+P(22)*QSQ)),
+     >        (1.0+P(13)*x+P(14)*x**2+P(15)*x**3+P(16)*x**4+P(17)*x**5)
+        ENDIF
+
+      ENDIF
+
+      A4 = A
+      x4 = qsq / 2. / pm / nu
+      emcfac = fitemc(x4, a4, goodfit)
+
+      F1 = pm * W1 * emcfac 
+      F2 = nu * W2 * emcfac 
+
+      RETURN                                                            
+      END                                          
+
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      SUBROUTINE MEC2009(z,a,q2,w2,f1)
+
+! fit to low q2 dip region: purefly empirical
+! assume contribution is pure transverse
+      implicit none
+      real*8 z,a,q2,w2,f1,am/0.9383/,w,nu
+      integer i
+      real*8 pb(20)/ 
+     >     0.1023E+02, 0.1052E+01, 0.2485E-01, 0.1455E+01,
+     >     0.5650E+01,-0.2889E+00, 0.4943E-01,-0.8183E-01,
+     >    -0.7495E+00, 0.8426E+00,-0.2829E+01, 0.1607E+01,
+     >     0.1733E+00, 0.0000E+00, 0.0000E+00, 0.0000E+00,
+     >     0.0000E+00, 0.0000E+00, 0.0000E+00, 0.0000E+00/
+      REAL*8 P(0:23)
+      COMMON/PARCORR/P
+      real*8 p18
+
+      real*8 x, f1corr
+
+      f1 = 0.0
+      if(w2.le.0.0) return
+      w  = sqrt(w2)
+      nu = (w2 - am**2 + q2) / 2. / am
+      x  = q2 / (2.0 * am * nu )
+
+      if(a.lt.2.5) return
+
+      p18 = p(18)
+! special case for 3He
+      if(a.gt.2.5 .and. a.lt.3.5) p18 = 70
+! special case for 4He
+      if(a.gt.3.5 .and. a.lt.4.5) p18 = 170.
+! new values for C, Al, Cu
+      if(a.gt.4.5) p18 = 215.
+      if(a.gt.20.) p18 = 235.
+      if(a.gt.50.) p18 = 230.
+
+       
+       f1corr = P(0)*exp(-((W-P(1))**2)/(P(2)))/ 
+     >      ((1.0 + MAX( 0.3 , Q2 ) / P(3) ) ** P(4) )*nu**P(5)
+     >      *( 1.0 + P18 * A ** ( 1.0 + P(19) * x ) )
+
+       f1 = f1corr
+
+       if(f1 .le.1.0E-9 ) f1=0.0
+c       write(*,*) 'vahe1= ', A, W*W, Q2, f1corr
+
+      return
+      end
+
+      SUBROUTINE F1F2QE09(Z, A, qsq, wsq, F1, F2)
+c
+C Calculates quasielastic A(e,e')X structure functions F1 and F2 PER NUCLEUS
+c for A>2 uses superscaling from Sick, Donnelly, Maieron, nucl-th/0109032
+c for A=2 uses pre-integrated Paris wave function (see ~bosted/smear.f)
+c coded by P. Bosted August to October, 2006
+c
+c input: Z, A  (real*8) Z and A of nucleus (shoud be 2.0D0 for deueron)
+c        Qsq (real*8) is 4-vector momentum transfer squared (positive in
+c                     chosen metric)
+c        Wsq (real*8) is invarinat mass squared of final state calculated
+c                     assuming electron scattered from a free proton
+c                 
+c outputs: F1, F2 (real*8) are structure functions per nucleus
+c
+c Note: Deuteron agrees well with Laget (see ~bosted/eg1b/laget.f) for
+c a) Q2<1 gev**2 and dsig > 1% of peak: doesnt describe tail at high W
+c b) Q2>1 gev**2 on wings of q.e. peak. But, this model is up
+c    to 50% too big at top of q.e. peak. BUT, F2 DOES agree very
+c    nicely with Osipenko et al data from CLAS, up to 5 GeV**2
+
+      IMPLICIT NONE     
+      REAL*8 P(0:23)
+      COMMON/PARCORR/P
+      REAL*8 Z, A, avgN, F1, F2, wsq, qsq
+      REAL*8 amp/0.93828/, amd/1.8756/
+      REAL*8 PAULI_SUP1, PAULI_SUP2
+      REAL*8 GEP, GEN, GMP, GMN, Q, Q3, Q4
+      REAL*8 RMUP/ 2.792782/ ,RMUN/ -1.913148 /                
+      real*8 pz, nu, dpz, pznom, pzmin
+      real*8 qv, TAU, W1, W2, FY, dwmin, w2p
+      real kappa, lam, lamp, taup, squigglef, psi, psip, nuL, nut
+      real kf, es, GM2bar, GE2bar, W1bar, W2bar, Delta, GL, GT
+      integer IA, izz, izzmin, izp, izznom, izdif
+
+c Look up tables for deuteron case
+       real*8 fyd(200)/
+     > 0.00001,0.00002,0.00003,0.00005,0.00006,0.00009,0.00010,0.00013,
+     > 0.00015,0.00019,0.00021,0.00026,0.00029,0.00034,0.00038,0.00044,
+     > 0.00049,0.00057,0.00062,0.00071,0.00078,0.00089,0.00097,0.00109,
+     > 0.00119,0.00134,0.00146,0.00161,0.00176,0.00195,0.00211,0.00232,
+     > 0.00252,0.00276,0.00299,0.00326,0.00352,0.00383,0.00412,0.00447,
+     > 0.00482,0.00521,0.00560,0.00603,0.00648,0.00698,0.00747,0.00803,
+     > 0.00859,0.00921,0.00985,0.01056,0.01126,0.01205,0.01286,0.01376,
+     > 0.01467,0.01569,0.01671,0.01793,0.01912,0.02049,0.02196,0.02356,
+     > 0.02525,0.02723,0.02939,0.03179,0.03453,0.03764,0.04116,0.04533,
+     > 0.05004,0.05565,0.06232,0.07015,0.07965,0.09093,0.10486,0.12185,
+     > 0.14268,0.16860,0.20074,0.24129,0.29201,0.35713,0.44012,0.54757,
+     > 0.68665,0.86965,1.11199,1.43242,1.86532,2.44703,3.22681,4.24972,
+     > 5.54382,7.04016,8.48123,9.40627,9.40627,8.48123,7.04016,5.54382,
+     > 4.24972,3.22681,2.44703,1.86532,1.43242,1.11199,0.86965,0.68665,
+     > 0.54757,0.44012,0.35713,0.29201,0.24129,0.20074,0.16860,0.14268,
+     > 0.12185,0.10486,0.09093,0.07965,0.07015,0.06232,0.05565,0.05004,
+     > 0.04533,0.04116,0.03764,0.03453,0.03179,0.02939,0.02723,0.02525,
+     > 0.02356,0.02196,0.02049,0.01912,0.01793,0.01671,0.01569,0.01467,
+     > 0.01376,0.01286,0.01205,0.01126,0.01056,0.00985,0.00921,0.00859,
+     > 0.00803,0.00747,0.00698,0.00648,0.00603,0.00560,0.00521,0.00482,
+     > 0.00447,0.00412,0.00383,0.00352,0.00326,0.00299,0.00276,0.00252,
+     > 0.00232,0.00211,0.00195,0.00176,0.00161,0.00146,0.00134,0.00119,
+     > 0.00109,0.00097,0.00089,0.00078,0.00071,0.00062,0.00057,0.00049,
+     > 0.00044,0.00038,0.00034,0.00029,0.00026,0.00021,0.00019,0.00015,
+     > 0.00013,0.00010,0.00009,0.00006,0.00005,0.00003,0.00002,0.00001/
+       real*8 avp2(200)/
+     >     1.0,0.98974,0.96975,0.96768,0.94782,0.94450,0.92494,0.92047,
+     > 0.90090,0.89563,0.87644,0.87018,0.85145,0.84434,0.82593,0.81841,
+     > 0.80021,0.79212,0.77444,0.76553,0.74866,0.73945,0.72264,0.71343,
+     > 0.69703,0.68740,0.67149,0.66182,0.64631,0.63630,0.62125,0.61154,
+     > 0.59671,0.58686,0.57241,0.56283,0.54866,0.53889,0.52528,0.51581,
+     > 0.50236,0.49291,0.47997,0.47063,0.45803,0.44867  
+

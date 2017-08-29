@@ -1,0 +1,14 @@
+This is a basic Readme for the my current collection of SIMC mc and XEMC cross section
+
+This contains 3 main dirs.
+-phase_space_fall16 
+--- This contains the useful and most up todate version of Hall A HRS transport monte carlo. That I know of approx - Summer 2017
+
+-weight_C12_Ar
+---This contains some simple scripts to take a cross section table and do some basic interpolation to weight an event produced from the monte carlo
+	for run from the single arm C12 Argon data. 
+
+-XEMC
+---This contians Zihungs XEMC cross section model. Still wroking on it. 
+
+
