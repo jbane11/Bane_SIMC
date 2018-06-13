@@ -1,0 +1,43 @@
+### Shell script for both making all the links and running th monte carlo
+
+if [[ "$#" -eq "2" ]] 
+then 
+	Target=$1
+	kin=$2
+else 
+	echo "Please enter Target " 
+	read Target
+	echo "Please enter kin # " 
+	read kin
+fi
+
+[ -f mcrun_info/input_run_"$Target"_kin"$kin".dat ] && echo "Linking the correct mc info file" || echo "Please create input_run_"$Target"_"$kin".dat in /mcrun_info" 
+ln -sf mcrun_info/input_run_"$Target"_kin"$kin".dat input.dat
+
+[ -f datarun_info/run_"$Target"_kin"$kin".in ] && echo "Linking the correct data run file" || echo "Please create run_"$Target"_kin"$kin".in in /datarun_info" 
+ln -sf datarun_info/run_"$Target"_kin"$kin".in reconmc.in
+
+[ -f ../phase_space_fall16/worksim/T2/"$Target"_kin"$kin".rzdat ] && echo "Linking the correct rzdat run file" || echo "Please generate the rzdat file needed"
+ln -sf ../phase_space_fall16/worksim/T2/"$Target"_kin"$kin".rzdat run.rzdat
+
+
+if [ ! -f "rzdat/run$RUN.rzdat" ]
+then
+	echo "Exiting, somthing is wrong"
+	#exit
+fi
+
+RUN=1000
+
+sh reconmc.sh "$RUN"
+echo " "
+echo "Just finish run # $RUN!!!" 
+echo " "
+echo " Let's make those ntuples root files and move them to the proper places!!!"
+echo " "
+h2root mc\ \ "$RUN.rzdat"
+echo " "
+mv mc\ \ "$RUN.root" "rootfiles/mc$RUN.root"
+echo " "
+mv mc\ \ "$RUN.rzdat" "mc_rzdat/mc$RUN.rzdat"
+

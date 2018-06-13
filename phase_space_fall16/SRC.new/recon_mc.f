@@ -151,8 +151,11 @@ CCCCCC              Initialize radcor arrays               CCCCCCC
         if(newrc) then
          firstr = .true. 
          trad = thetac/radcon
+CCCCC        write(6,*) 'debug::::  calling rc_mod ::'
          call rc_mod(firstr,trad,trad,hsec,1,rcic,t1)
-
+CCCCC        write(6,*) 'debug:: value for rad table (1,1)::', exttab(1,1)
+CCCCC        write(6,*) 'debug:: value for rad table (5,1)::', exttab(1,5)
+        write(6,*) 'debug:: value for rad table (13,1)::', exttab(1,13)
 
          write(6,*) firstr,trad,hsec,rcic
          write(6,*) "test t1 value: " , t1

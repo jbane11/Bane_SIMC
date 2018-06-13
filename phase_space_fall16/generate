@@ -1,0 +1,37 @@
+#!/bin/bash
+
+if [ $# -eq 0 ] 
+then
+	echo "Please enter the target and kinematic setting?  "
+	echo "Target (D2, C, optics, He3....)"
+	read target
+	echo "kin (# 1-16)"
+	read kin
+else
+	target=$1
+	kin=$2
+fi
+
+#create a link for correct inp file
+if [ -e infiles/T2/kin$kin/$target.inp ] 
+then 
+	echo "Linking the correct inp file"  
+	ln -sf T2/kin$kin/$target.inp infiles/run.inp
+else
+	echo"Please create $target.inp in infiles/T2/kin$kin/" 
+	exit
+fi
+
+# Run the single arm event generator.
+./mc_hrs_single
+
+
+# give ouput file correct name.
+echo "Renaming the files from run. to $target"_kin"$kin" 
+cp outfiles/run.hist "outfiles/T2/$target"_kin"$kin".hist
+cp worksim/run.rzdat "worksim/T2/$target"_kin"$kin".rzdat
+pwd=$PWD
+cd worksim/T2/
+h2root $target"_kin"$kin".rzdat"
+cd ${pwd}
+
