@@ -1,6 +1,6 @@
 !------------------------------------------------------------------------------
 ! Input file for MC_HRS_SINGLE
-! H3 kin7 target
+! H kin7 target
 !------------------------------------------------------------------------------
      1000000	Monte-Carlo trials
      3100.0	Spectrometer momentum (in MeV/c)
@@ -20,10 +20,10 @@
      100.0	Theta reconstruction cut (half width in mr)
      100.0	Phi   reconstruction cut (half width in mr)
      50.0	ZTGT  reconstruction cut (Half width in cm)
-     62382.3	one radiation length of target material (in cm)
-     0.00306 	target density in g/cm^3
+     22526.3	one radiation length of target material (in cm)
+     0.002832 	target density in g/cm^3
      1 		target atomic number Z
-     3.02	target standard atomic weight A   
+     1.01	target standard atomic weight A   
      0.0        Beam x offset (cm)  +x = beam left
      0.0	Beam y offset (cm)  +y = up
      0.0        Target z offset (cm)+z = downstream (0.25)
