@@ -226,9 +226,9 @@ C	read(*,1968) rawname
 	call getarg(3,rawname)
 	iss = rd_int(rawname,tarid)
 
-	if(tarid.GT.7.or.tarid.LT.0)  then
+	if(tarid.GT.6.or.tarid.LT.0)  then
 	   tarid = 2
-	   write(6,*) 'Invalid input.Use default vertex flag (tarid = 3, H3 gas)'
+	   write(6,*) 'Invalid input.Use default vertex flag (tarid = 2, H3 gas)'
 	endif
 	write(6,*) '----generate event at tarid = ', tarid
 
@@ -354,11 +354,11 @@ c	read (chanin,1001) str_line
 !	write(6,*) str_line(1:last_char(str_line))
 !	if (.not.rd_real(str_line,rad_len_cm)) stop 'ERROR (RAD_LEN_CM) in setup!'
 	if(tarid==0) rad_len_cm = 999!dummy
-	if(tarid==2) rad_len_cm = 122.6 !D2
-	if(tarid==3) rad_len_cm = 183.6 !H3
-	if(tarid==4) rad_len_cm = 71.07 !He3
-	if(tarid==5.or.tarid==6) rad_len_cm = 8.89 !Al
-	if(tarid==7) rad_len_cm = 19.32 !C`
+	if(tarid==1) rad_len_cm = 122.6 !D2
+	if(tarid==2) rad_len_cm = 183.6 !H3
+	if(tarid==3) rad_len_cm = 71.07 !He3
+	if(tarid==4.or.tarid==5) rad_len_cm = 8.89 !Al
+	if(tarid==6) rad_len_cm = 19.32 !C`
 	
 ! Beam and target offsets
 	read (chanin, 1001) str_line
@@ -558,9 +558,9 @@ C Units are cm.
 	  x = gauss1(3.0) * gen_lim(4) / 6.0			!beam width
 	  y = gauss1(3.0) * gen_lim(5) / 6.0			!beam height
 
-	  if (tarid == 5) then !hit entrance window
+	  if (tarid == 4) then !hit entrance window
 	     z = -grnd()*s_end - gen_lim(6)/2.0	
-	  else if (tarid == 6) then !hit exit window
+	  else if (tarid == 5) then !hit exit window
  	     z = grnd()*s_end + gen_lim(6)/2.0         
 c	  else if (wall == 4) then !hit single foil in the middle
 c 	     z = (grnd()-0.5)*s_end
@@ -686,22 +686,22 @@ c       s_end = 0.011  !end caps 0.01, side 0.018 inch
 	     side_path = (target_r+s_wall)  / abs(sin(th_ev))
 	     
 	     if (forward_path.lt.side_path) then
-		if(tarid.LE.4) s_Al = s_end/ abs(cos(th_ev))
-	        if(tarid == 5) s_Al = (-zz-gen_lim(6)/2.+s_end)/abs(cos(th_ev)) 
-	        if(tarid == 6) s_Al = forward_path
+		if(tarid.LE.3) s_Al = s_end/ abs(cos(th_ev))
+	        if(tarid == 4) s_Al = (-zz-gen_lim(6)/2.+s_end)/abs(cos(th_ev)) 
+	        if(tarid == 5) s_Al = forward_path
 c	        if(wall==4) s_Al = forward_path
 
 		s_target = forward_path-s_Al
 	     else
-		if(tarid.LE.4) s_Al = s_wall / abs(sin(th_ev)) ! gas->side wall
-		if(tarid==5) then
+		if(tarid.LE.3) s_Al = s_wall / abs(sin(th_ev)) ! gas->side wall
+		if(tarid==4) then
 		   s_Al = (-zz-gen_lim(6)/2)/abs(cos(th_ev))
 		   s_Al = s_Al + s_wall/abs(sin(th_ev)) !entrance window->gas-> side wall
 		   if(s_Al.GT.side_path) then
 		      s_Al = side_path  !go through entrance window only(very large angle)
 		   endif
 		endif
-		if(tarid==6) s_Al = side_path
+		if(tarid==5) s_Al = side_path
 c		if(wall==4) s_Al = side_path
 
 		s_target = side_path-s_Al

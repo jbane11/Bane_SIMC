@@ -2,36 +2,81 @@
 
 if [ $# -eq 0 ] 
 then
-	echo "Please enter the target and kinematic setting?  "
+	echo "Please enter the target , run number and some id #(1-6) "
 	echo "Target (D2, C, optics, He3....)"
 	read target
-	echo "kin (# 1-16)"
-	read kin
+	echo "run number (# 1208-2500)"
+	read run_num
+	echo " id # 1-6  1-D2 2-H3 3-He3 ,4 entrance 5 exit 6 foil"
+	read id_num
+	echo "Please enter kin #"
+	read kin	
 else
 	target=$1
-	kin=$2
+	run_num=$2
+	id_num=$3
+	kin=$4
 fi
 
 #create a link for correct inp file
-if [ -e infiles/T2/kin$kin/$target.inp ] 
-then 
-	echo "Linking the correct inp file"  
-	ln -sf T2/kin$kin/$target.inp infiles/run.inp
+#if [ -e infiles/T2/kin$kin/$target.inp ] 
+#then 
+#	echo "Linking the correct inp file"  
+#	ln -sf T2/kin$kin/$target.inp infiles/${target}_kin${kin}.inp
+#else
+#	echo"Please create $target.inp in infiles/T2/kin$kin/" 
+#	exit
+#fi
+if [ "$target" == "D2" ]
+then
+	echo "D2"
+	tarid=1
+elif [ "$target" == "H3" ]  
+then
+	echo "H3"
+	tarid=2
+ 
+elif [ "$target" == "He3" ]  
+then
+	echo "He3"
+	tarid=3
 else
-	echo"Please create $target.inp in infiles/T2/kin$kin/" 
-	exit
+	echo "neither"
+	tarid=0
 fi
 
-# Run the single arm event generator.
-./mc_hrs_single
-
-
-# give ouput file correct name.
-echo "Renaming the files from run. to $target"_kin"$kin" 
-cp outfiles/run.hist "outfiles/T2/$target"_kin"$kin".hist
-cp worksim/run.rzdat "worksim/T2/$target"_kin"$kin".rzdat
-pwd=$PWD
-cd worksim/T2/
-h2root $target"_kin"$kin".rzdat"
-cd ${pwd}
-
+if [ "$id_num" == "all" ]
+then
+	echo "lookin at all"
+	
+	for x in $tarid 4 5 
+		do	
+		id_num=$x
+		echo ${id_num}
+		# Run the single arm event generator.
+		./mc_hrs_single ${target}  ${run_num} ${id_num}
+	
+		# give ouput file correct name.
+		echo "Renaming the files and making the root file" 
+		mv "./outfiles/T2_ ${run_num}_${id_num}.hist" "./outfiles/${target}_${run_num}_${id_num}.hist"
+		mv "worksim/t2_${run_num} _${id_num}.rzdat" "worksim/T2/kin${kin}/${target}_${run_num}_${id_num}.rzdat"
+		pwd=$PWD
+		cd worksim/T2/kin${kin}/
+		h2root "${target}_${run_num}_${id_num}.rzdat"
+		cd ${pwd}
+	done	
+else
+	id_num=$tarid
+	# Run the single arm event generator.
+	./mc_hrs_single ${target}  ${run_num} ${id_num}
+	
+	# give ouput file correct name.
+	echo "Renaming the files and making the root file" 
+	mv "./outfiles/T2_ ${run_num}_${id_num}.hist" "./outfiles/${target}_${run_num}_${id_num}.hist"
+	mv "worksim/t2_${run_num} _${id_num}.rzdat" "worksim/${target}_${run_num}_${id_num}.rzdat"
+	pwd=$PWD
+	#cd worksim/
+	#h2root "${target}_${run_num}_${id_num}.rzdat"
+	#cd ${pwd}
+	
+fi

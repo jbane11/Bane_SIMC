@@ -5,7 +5,7 @@
       integer*4 i,j,k
       real*4 xin,rce,theta,thspect,thcentdeg,sig
       real*8 x(6),rc(6),m(6)
-      real*8 radtab_temp(13),thetadeg,thcent,thetalow,thetahigh
+      real*8 radtab_temp(5),thetadeg,thcent,thetalow,thetahigh
       real*8 thetatab,diffxL1,diffxL2,diffxH1,diffxH2
       integer*4 tarnum,tarid,tar(20),eof,tdiff,tdiff_min,tdiff_max
       real*8 mp,mp2,radcon,thetarad
@@ -28,38 +28,27 @@
 CCCCCC              read in radcor table              CCCCCC
 
 c      write(6,*)"here",tarid,tar(tarid),firstr
-c      Bane- I think to make this work with Dave Gaskels code     
-c     I will need to edit the do j= line to due 1 through # of
-c     columns in my txt file along with the decleration of 
-c      exttab (located in rad.cmn)
-c     and radteb_temp, 
-c    
-c    New table ( E, E' , theta, x, Q2 , Born, Born_In, Born_QE, Sig_Rad,
-c       Sig_rad_EL, Sig_Rad_QE, Sig_Rad DIS, C_cor)
- 
+
       if (firstr) then 
-       write(6,*) "Starting to read table:::"
        i = 1
        eentries = 0 
        endof = .false.
        read(34,*)
        do while(.not.endof)
          read(34,*,END=1001) radtab_temp
-         do j=1,13
+         do j=1,5
            exttab(i,j) = radtab_temp(j)
-           
          enddo 
          eentries = eentries + 1
          i = i + 1 
        enddo
+       write(6,*) "Nentries in radcor table is:  ",eentries
+      endif
 
  1001 endof = .true.
 
       close(34) 
 
-       write(6,*) "Finished reading the table:::"
-       write(6,*) "Nentries in radcor table is:  ",eentries
-      endif
 c      write(6,*) "Nentries in radcor table is:  ",eentries
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -67,7 +56,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
     
 CCCCCC       Calculate radiative correction and model by doing    CCCCCC
 CCCCCC       linear interpolation in theta and xin                CCCCCC
-c Bane- need to double check theta location
+
         tdiff_min = 10.0
         tdiff_max = 10.0
 
@@ -91,8 +80,6 @@ c        thetalow = int(thetadeg)-tdiff_min     !!! find integer angle below !!!
 c        thetahigh = int(thetadeg)+tdiff_max    !!! find integer angle above !!!
 
 
-c    New table ( E, E' , theta, x, Q2 , Born, Born_In, Born_QE, Sig_Rad,
-c       Sig_rad_EL, Sig_Rad_QE, Sig_Rad DIS, C_cor)
 
 CCCCCC     do search for rcs to interpolate in theta and xin.     CCCCCC 
 CCCCCC     thetahigh is the integer theta above the               CCCCCC

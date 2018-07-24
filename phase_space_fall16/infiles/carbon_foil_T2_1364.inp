@@ -1,10 +1,10 @@
 !------------------------------------------------------------------------------
 ! Input file for MC_HRS_SINGLE
-! C12 target
+! C12 foil for kin 7 run1364
 !------------------------------------------------------------------------------
      1000000	Monte-Carlo trials
-     2160.0	Spectrometer momentum (in MeV/c)
-     15.15	Spectrometer angle (in degrees)
+     3100.0	Spectrometer momentum (in MeV/c)
+     25.594	Spectrometer angle (in degrees)
     -10.0	M.C. DP/P  down limit 
      10.0	M.C. DP/P  up   limit 
     -100.0	M.C. Theta down limit (mr)
@@ -24,11 +24,11 @@
      2.21	target density in g/cm^3
      6		target atomic number Z
      12.01	target standard atomic weight A   
-     0.00802    Beam x offset (cm)  +x = beam left
-     0.098	Beam y offset (cm)  +y = up
+     0.0 	Beam x offset (cm)  +x = beam left
+     0.0	Beam y offset (cm)  +y = up
      0.0        Target z offset (cm)+z = downstream (0.25)
-     0.122      Spectrometer x offset (cm) +x = down
-     0.098      Spectrometer y offset (cm)
+     0.0        Spectrometer x offset (cm) +x = down
+     0.0	Spectrometer y offset (cm)
      0.0        Spectrometer z offset (cm)
      0.0        Spectrometer xp offset (mr)
      0.0        Spectrometer yp offset (mr)

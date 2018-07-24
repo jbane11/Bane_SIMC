@@ -1,0 +1,125 @@
+#!bin/bash
+#set -x
+if [[ $# -ge "1" ]]
+then
+	if [[ $1 == "-t" ]]
+	then
+		tgt=$2
+		kin=$3
+	elif [[ $1 == "-k" ]]
+	then 
+		kin=$2
+	elif [[ $1 == "-r" ]]
+	then
+		begin=$2
+		end=$3
+	fi
+else
+	echo "Please run again with a flag and need inputs"
+	echo "-t tgt kin"
+	echo "-k kin"
+	echo "-r beginrun endrun"
+	exit
+fi
+
+
+if [ "$1" ==  "-t" ]
+then
+	if [[ "${tgt}" == "He3" ]]
+	then
+		tgtL=Helium
+		ID=4
+	elif [[ "${tgt}" == "H3" ]]
+	then
+		tgtL=Tritium
+		ID=3
+	elif [[ "${tgt}" == "D2" ]]
+	then
+		tgtL=Deuterium
+		ID=2
+	fi
+	
+	while IFS=, read run kinin theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
+	do
+		if [ "${tgtL}" ==  "${target}"  -a  "${kin}" == "${kinin}" ] 
+	       	then
+			echo $run ${tgt} ${kin} $ID
+        		sh T2_MC ${tgt} ${kin} ${run} ${ID}
+		fi	    
+	done < /home/jbane/tritium/run_list.csv
+
+elif [ "$1" ==  "-k" ]
+then
+	while IFS=, read run kinin theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
+	do
+		if [ "${kin}" == "${kinin}" ] 
+	       	then
+			tgt=""
+			notgt=0
+			if [[ "${target}" == "Helium" ]]
+			then
+				tgt=He3
+				ID=4
+				notgt=1
+			elif [[ "${taget}" == "Tritium" ]]
+			then
+				tgt=H3
+				ID=3
+				notgt=1
+			elif [[ "${target}" == "Deuterium" ]]
+			then
+				tgt=D2
+				ID=2
+				notgt=1
+			fi
+			if [ "$notgt" -eq "1" ]
+			then
+				echo $run ${tgt} ${kinin} $ID
+        			sh T2_MC ${tgt} ${kin} ${run} ${ID}
+			fi
+		fi	    
+	done < /home/jbane/tritium/run_list.csv
+
+elif [ "$1" ==  "-r" ]
+then
+	while IFS=, read run kinin theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
+	do
+		if [ "${run}" == "Run" ]
+		then
+			continue
+		fi
+		if [ "${run}" -gt "${end}" ]
+		then	
+			break
+		fi
+		if [ "${run}" -ge "${begin}"  -a  "${run}" -le "${end}" ] 
+	       	then
+			notgt=0
+			tgt=""
+			if [[ "${target}" == "Helium" ]]
+			then
+				tgt=He3
+				ID=4
+				notgt=1
+			elif [[ "${target}" == "Tritium" ]]
+			then
+				tgt=H3
+				ID=3
+				notgt=1
+			elif [[ "${target}" == "Deuterium" ]]
+			then
+				tgt=D2
+				ID=2
+				notgt=1
+			fi
+			if [ "$notgt" -eq "1" ]
+			then
+				echo $run ${tgt} ${kinin} $ID
+	       			sh T2_MC ${tgt} ${kinin} ${run} ${ID}
+			fi
+		fi	    
+	done < /home/jbane/tritium/run_list.csv
+
+fi
+
+

@@ -1,0 +1,163 @@
+#!/bin/bash
+#set -x
+### Shell script for both making all the links and running th monte carlo
+
+
+gendir=/home/jbane/halla_xem/phase_space_fall16
+tabledir=~/tritium/T2_externals
+weightdir=~/halla_xem/weight_T2
+doall=1
+
+
+if [[ "$#" -ge "4" ]] 
+then 
+	Target=$1
+	kin=$2
+	runnum=$3
+	ID=$4
+	if [[ "$#" -gt "4" ]]
+	then
+		doall=$5
+	fi
+else 
+	echo "Please enter Target " 
+	read Target
+	echo "Please enter run number"
+	read runnum
+	echo "Please enter kin # " 
+	read kin
+	echo "Please enter tgt ID (D2=2, H3=3,He3=4)"
+	read ID
+fi
+
+if [ -f mcrun_info/input_"$Target"_kin"$kin".dat ] 
+then
+	echo "Linking the correct mc info file" 
+	ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
+else
+	if (( ${doall} ))
+	then
+		echo "Making runinfo!!"
+		cd mcrun_info
+		cp input_D2_kin2.dat input_${Target}_kin${kin}.dat
+		cd ..
+	else
+		echo "Please create input_"$Target"_kin"$kin".dat in /mcrun_info" 
+		exit
+	fi
+fi
+
+if [ -f datarun_info/run${runnum}.in ] 
+then
+	echo "Linking the correct data run file" 
+	ln -sf datarun_info/run${runnum}.in reconmc.in
+	
+else	
+	if (( ${doall} ))
+	then
+		echo "Making datrun_info"
+		cd datarun_info
+		sh gen_datarun ${runnum} ${kin} ${ID}
+		cd ..
+	else
+		echo "Please create run_${runnum}.in in /datarun_info" 
+		exit
+	fi
+fi
+
+if [ "$Target" == "D2" ]
+then
+        echo "D2"
+        tarid=2
+elif [ "$Target" == "H3" ]
+then
+        echo "H3"
+        tarid=3
+
+elif [ "$Target" == "He3" ]
+then
+        echo "He3"
+        tarid=4
+else
+        echo "dummy"
+        tarid=0
+fi
+
+for x in $tarid 5 6
+do
+	ID=$x
+
+
+	if [ -f ../phase_space_fall16/worksim/T2/kin${kin}/${Target}_${runnum}_${ID}.rzdat ] 
+	then
+		echo "Linking the correct rzdat run file" 
+		ln -sf ../phase_space_fall16/worksim/T2/kin${kin}/${Target}_${runnum}_${ID}.rzdat run.rzdat
+	else
+	
+		if (( ${doall} )) 
+		then
+			cd $gendir
+			sh generate ${Target} ${runnum} ${ID} ${kin}
+			cd $weightdir
+		else
+			echo "Please generate the rzdat file needed"
+			exit
+		fi
+	fi
+
+
+	tgt=$Target
+
+	suffix[1]=""
+	suffix[2]=""
+	suffix[3]=""
+	suffix[4]=""
+	suffix[5]="_Alwalls_Up"
+	suffix[6]="_Alwalls_Dn"
+
+
+	modtgt="${tgt}${suffix[${tgtid}]}"
+
+	if [ -e /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out ]
+	then
+		echo "Making a link to the cross section table"
+		ln -sf /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out rc94.dat
+	else
+		if (( ${doall} ))
+		then
+			echo "Will make a cross section table for this run"
+			cd $tabledir	
+			sh CS ${tgt} ${kin} ${tarid}
+			cd $weightdir
+		else
+			echo "Make the table!! Try sh CS ${tgt}  ${kin} ${ID} "
+			exit
+		fi
+	fi
+
+	if [ ! -f "run.rzdat" ]
+	then
+		echo "Exiting, somthing is wrong"
+		#exit
+	fi
+
+	RUN=${Target}_kin${kin}
+
+	./recon_mc 
+	echo " "
+	echo "Just finish  $RUN!!!" 
+	echo " "
+	echo " Let's make those ntuples root files and move them to the proper places!!!"
+	echo " "
+	h2root "mcrun.rzdat"
+	echo " "
+	mv "mcrun.root" "rootfiles/mc${runnum}_${ID}.root"
+	echo " "
+	mv "mcrun.rzdat" "mc_rzdat/mc${runnum}_${ID}.rzdat"
+done
+
+
+
+
+
+

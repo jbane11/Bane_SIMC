@@ -71,8 +71,8 @@ c       use_rcmod = .false.
         mp = .9382723
         mp2 = mp*mp
 
-        read(5,*) runnum
-        write(outfile,'("mc",i5,".rzdat")')runnum
+CCC c   read(5,*) runnum
+        write(outfile,'("mcrun.rzdat")')
         open(unit=18, file='input.dat',status='old') 
         read(18,*) infile,ngentot,maxev,dxp,dyp,delup,deldown,cs_flag,
      &              rc_flag
@@ -92,8 +92,8 @@ CCCCCC      Read run info from database for data           CCCCCCC
 
         open(unit=16,file='reconmc.in',status='old')
 
-        read(16,*) target,ebeam,hsec,thetac,prescale,bmcur1,bmcur2,
-     &            bcm1charge,bcm2charge,cltime,eltime,trackeff,
+        read(16,*) target,ebeam,hsec,thetac,prescale,bmcur1,
+     &            bcm1charge,cltime,eltime,trackeff,
      &            trigeff,rate
 
 c        hmsprlo = 1.0   !!!!*****  TEST  *****!!!!
@@ -103,8 +103,8 @@ C        trigeff = hmsprlo*hmstof + (1. - hmsprlo)*hms34
 
         if(target.NE.11.OR.target.NE.15) cryo = .false.
 
-        bcmavecharge = (bcm1charge+bcm2charge)/2.         !!! Average over BCMs !!!
-        bmcur = (bmcur1+bmcur2)/2.
+        bcmavecharge = (bcm1charge+bcm1charge)/2.         !!! Average over BCMs !!!
+        bmcur = (bmcur1+bmcur1)/2.
         close(16)
         
 
