@@ -7,7 +7,7 @@ then
 	read target
 	echo "run number (# 1208-2500)"
 	read run_num
-	echo " id # 1-6  1-D2 2-H3 3-He3 ,4 entrance 5 exit 6 foil"
+	echo " id # 1-7  2-D2 3-H3 4-He3 ,5 entrance 6 exit 7 foil"
 	read id_num
 	echo "Please enter kin #"
 	read kin	
@@ -30,16 +30,16 @@ fi
 if [ "$target" == "D2" ]
 then
 	echo "D2"
-	tarid=1
+	tarid=2
 elif [ "$target" == "H3" ]  
 then
 	echo "H3"
-	tarid=2
+	tarid=3
  
 elif [ "$target" == "He3" ]  
 then
 	echo "He3"
-	tarid=3
+	tarid=4
 else
 	echo "neither"
 	tarid=0
@@ -49,7 +49,7 @@ if [ "$id_num" == "all" ]
 then
 	echo "lookin at all"
 	
-	for x in $tarid 4 5 
+	for x in $tarid 5 6 
 		do	
 		id_num=$x
 		echo ${id_num}
@@ -59,21 +59,21 @@ then
 		# give ouput file correct name.
 		echo "Renaming the files and making the root file" 
 		mv "./outfiles/T2_ ${run_num}_${id_num}.hist" "./outfiles/${target}_${run_num}_${id_num}.hist"
-		mv "worksim/t2_${run_num} _${id_num}.rzdat" "worksim/T2/kin${kin}/${target}_${run_num}_${id_num}.rzdat"
+		mv "worksim/t2_${run_num} _${id_num}.rzdat" "worksim/${target}_${run_num}_${id_num}.rzdat"
 		pwd=$PWD
-		cd worksim/T2/kin${kin}/
-		h2root "${target}_${run_num}_${id_num}.rzdat"
+		#cd worksim/T2/kin${kin}/
+		#h2root "${target}_${run_num}_${id_num}.rzdat"
 		cd ${pwd}
 	done	
 else
-	id_num=$tarid
+#	id_num=$tarid
 	# Run the single arm event generator.
 	./mc_hrs_single ${target}  ${run_num} ${id_num}
 	
 	# give ouput file correct name.
 	echo "Renaming the files and making the root file" 
-	mv "./outfiles/T2_ ${run_num}_${id_num}.hist" "./outfiles/${target}_${run_num}_${id_num}.hist"
-	mv "worksim/t2_${run_num} _${id_num}.rzdat" "worksim/${target}_${run_num}_${id_num}.rzdat"
+	mv -v "./outfiles/T2_ ${run_num}_${id_num}.hist" "./outfiles/${target}_${run_num}_${id_num}.hist"
+	mv -v "worksim/t2_${run_num} _${id_num}.rzdat" "worksim/${target}_${run_num}_${id_num}.rzdat"
 	pwd=$PWD
 	#cd worksim/
 	#h2root "${target}_${run_num}_${id_num}.rzdat"

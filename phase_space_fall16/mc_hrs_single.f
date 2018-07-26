@@ -314,7 +314,7 @@ c	read (chanin,1001) str_line
 !	do i=1,3
 !	   write(*,*)'gen_lim_up/down = ',gen_lim_up(i),' ',gen_lim_down(i)
 !	enddo
-
+!       Beam spot Horix, vert, and z length (4,5,6)
 	do i = 4,6
 	  read (chanin,1001) str_line
 	  write(6,*) str_line(1:last_char(str_line))

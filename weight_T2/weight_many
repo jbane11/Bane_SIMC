@@ -115,7 +115,7 @@ then
 			if [ "$notgt" -eq "1" ]
 			then
 				echo $run ${tgt} ${kinin} $ID
-	       			sh T2_MC ${tgt} ${kinin} ${run} ${ID}
+	       			sh T2_MC ${tgt} ${kinin} ${run} ${ID} 1
 			fi
 		fi	    
 	done < /home/jbane/tritium/run_list.csv

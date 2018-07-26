@@ -7,7 +7,8 @@ gendir=/home/jbane/halla_xem/phase_space_fall16
 tabledir=~/tritium/T2_externals
 weightdir=~/halla_xem/weight_T2
 doall=1
-
+rc=0
+redoall=0
 
 if [[ "$#" -ge "4" ]] 
 then 
@@ -19,6 +20,10 @@ then
 	then
 		doall=$5
 	fi
+	if [[ "$#" -gt "" ]]
+	then
+		rc=$5
+	fi
 else 
 	echo "Please enter Target " 
 	read Target
@@ -29,6 +34,20 @@ else
 	echo "Please enter tgt ID (D2=2, H3=3,He3=4)"
 	read ID
 fi
+
+if [ -e rootfiles/mc${runnum}.root -a ${rc}==1 ]
+then
+	echo "The mc root file exist. Do you want to recreate?"
+	read rc
+	if [ ${rc} == "0" ]
+	then
+		exit
+	else
+		rm -v rootfiles/mc${runnum}_*.root
+	fi
+fi
+	
+
 
 if [ -f mcrun_info/input_"$Target"_kin"$kin".dat ] 
 then
@@ -88,10 +107,10 @@ do
 	ID=$x
 
 
-	if [ -f ../phase_space_fall16/worksim/T2/kin${kin}/${Target}_${runnum}_${ID}.rzdat ] 
+	if [ -f ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat ] 
 	then
 		echo "Linking the correct rzdat run file" 
-		ln -sf ../phase_space_fall16/worksim/T2/kin${kin}/${Target}_${runnum}_${ID}.rzdat run.rzdat
+		ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
 	else
 	
 		if (( ${doall} )) 
@@ -118,7 +137,7 @@ do
 
 	modtgt="${tgt}${suffix[${tgtid}]}"
 
-	if [ -e /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out ]
+	if [ -e /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out -o ${redoall}=="0" ]
 	then
 		echo "Making a link to the cross section table"
 		ln -sf /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out rc94.dat
@@ -127,7 +146,7 @@ do
 		then
 			echo "Will make a cross section table for this run"
 			cd $tabledir	
-			sh CS ${tgt} ${kin} ${tarid}
+			sh CS ${tgt} ${kin} ${ID}
 			cd $weightdir
 		else
 			echo "Make the table!! Try sh CS ${tgt}  ${kin} ${ID} "
@@ -143,7 +162,7 @@ do
 
 	RUN=${Target}_kin${kin}
 
-	./recon_mc 
+	./recon_mc ${runnum} ${ID} 
 	echo " "
 	echo "Just finish  $RUN!!!" 
 	echo " "
@@ -157,7 +176,8 @@ do
 done
 
 
-
+analyzer -b -l -q "merge.C(${runnum})"
+#rm -v rootfiles/mc${runnum}_*.root
 
 
 
