@@ -1,0 +1,11 @@
+#!bin/bash
+
+opf=runplan.inp
+echo "run_number  beam_energy  momentum    angle " >> ${opf}
+while IFS=, read run kin1 theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
+do
+	echo "${run}   10619.500    3.1002     ${theta}" >> ${opf}
+done < ../../weight_T2/datarun_info/run_list.csv
+
+
+
