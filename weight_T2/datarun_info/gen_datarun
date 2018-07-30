@@ -1,0 +1,54 @@
+#!bin/bash
+#set -x
+# tgt from table E E` theta ps cur1 cur2 Q1 Q2 clkLT elLT Treff Trigeff rate
+
+
+if [ $# -lt 3 ]
+then
+	echo "Please enter run number"
+	read runnum
+	echo "Please enter kin num"
+	read kin 
+	echo "Please enter tgt id from table"
+	read tgtid
+	
+else
+	runnum=$1
+	kin=$2
+	tgtid=$3
+
+fi
+
+if [ -e run${runnum}.in ]
+then
+	rm -v run${runnum}.in
+fi
+of=run${runnum}.in
+
+if [ ${kin} == 16 ]
+then
+	eprime=2.9
+else
+	eprime=3.1
+fi
+
+
+while IFS=, read run kin1 theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
+do 
+	if [ "${run}" ==  "${runnum}" ]
+	then
+		break
+	fi
+done < run_list.csv
+
+Q_dnew=`echo ${dnew_count}|awk '{printf $1 * 0.0003358}'`
+el_LT=1.0 #need to fix
+track_eff=1.0 #need to fix
+trig_eff=1.0 #need to fix
+cereff=1.0 #need to fix
+caloeff=1.0 #need to fix
+rate=1.0 #need to fix /unknown
+
+echo "${tgtid}   10.6  ${eprime}  ${theta}  $ps_T2  ${bcm_dnew}  ${Q_dnew}  ${T2_LT} ${el_LT}  ${track_eff}  ${trig_eff} ${cereff} ${caloeff}  ${rate} ">> ${of}
+
+
