@@ -27,7 +27,7 @@
 
 CCCCCC              read in radcor table              CCCCCC
 
-c      write(6,*)"here",tarid,tar(tarid),firstr
+c       write(6,*)"here",tarid,tar(tarid),firstr,thetadeg,xin
 
       if (firstr) then 
        i = 1
@@ -163,7 +163,6 @@ c        write(6,*)"here:  ",m(3),m(4),m(6)
 c          write(6,*)  m(1),m(2),m(3),m(4)
 c          write(6,*)  x(1),x(2),x(3),x(4),xin
         endif
-
 
 CCCCCC                          End search                            CCCCCC
 

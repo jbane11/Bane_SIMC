@@ -27,15 +27,15 @@ C-_____________________________________________________________________________
 	include 'constants.inc'
 
 C HBOOK/NTUPLE common block and parameters.
-	integer*4	pawc_size
-	parameter	(pawc_size = 80000)
-	common		/pawc/ hbdata(pawc_size)
-	integer*4	hbdata,nhut
-	parameter	(nhut = 28)
-	character*8	hut_nt_names(nhut)/
-     >			'hsxfp', 'hsyfp', 'hsxpfp', 'hsypfp',
-     >			'hsytari', 'hsdeltai', 'hsyptari', 'hsxptari',
-     >			'hsytar', 'hsdelta', 'hsyptar', 'hsxptar','fry',
+        integer*4       pawc_size
+        parameter       (pawc_size = 80000)
+        common          /pawc/ hbdata(pawc_size)
+        integer*4       hbdata,nhut
+        parameter       (nhut = 28)
+        character*8     hut_nt_names(nhut)/
+     >                  'hsxfp', 'hsyfp', 'hsxpfp', 'hsypfp',
+     >                  'hsytari', 'hsdeltai', 'hsyptari', 'hsxptari',
+     >                  'hsytar', 'hsdelta', 'hsyptar', 'hsxptar','fry',
      >                  'frx', 'ok_spec','hsztari','hsztar',
      >                  'stopwhen', 'x_stop','y_stop',
      >                  'p_init','e_init','p_recon','e_recon',
@@ -45,7 +45,7 @@ C HBOOK/NTUPLE common block and parameters.
 	real*4		hut(nhut)
 
 C Local declarations.
-	integer*4	i,
+	integer*4	i, ierr,
      >			chanin	/1/,
      >			chanout	/2/,
      >			n_trials,trial,
@@ -106,30 +106,31 @@ C Miscellaneous
 c	integer*4 hit_calo                      !flag for hitting the calorimeter
 
 C Initial and reconstructed track quantities.
-	real*8 dpp_init,dth_init,dph_init,xtar_init,ytar_init,ztar_init
-	real*8 dpp_recon,dth_recon,dph_recon,ytar_recon,ztar_recon
-	real*8 x_fp,y_fp,dx_fp,dy_fp		!at focal plane
-	real*8 frx,fry,fr1,fr2
-	real*8 p_spec,th_spec			!spectrometer setting
-	real*8 resmult
-	real*8 good_evt
+        real*8 dpp_init,dth_init,dph_init,xtar_init,ytar_init,ztar_init
+        real*8 dpp_recon,dth_recon,dph_recon,ytar_recon,ztar_recon
+        real*8 x_fp,y_fp,dx_fp,dy_fp		!at focal plane
+        real*8 frx,fry,fr1,fr2
+        real*8 p_spec,th_spec			!spectrometer setting
+        real*8 resmult
+        real*8 good_evt
 
 C Control flags (from input file)
-	integer*4 p_flag			!particle identification
-	logical*4 ms_flag
-	logical*4 wcs_flag
-	integer*4 col_flag
-	logical*4 gen_evts_file_flag
+        integer*4 p_flag			!particle identification
+        logical*4 ms_flag
+        logical*4 wcs_flag
+        integer*4 col_flag
+        logical*4 gen_evts_file_flag
 
 C Hardwired control flags.
-	logical*4 hut_ntuple	/.true./
-	logical*4 decay_flag	/.false./
+        logical*4 hut_ntuple	/.true./
+        logical*4 decay_flag	/.false./
 
-	real*8	dpp_var(2),dth_var(2),dph_var(2),ztg_var(2)
-	real*4	stime,etime,zero
+       real*8	dpp_var(2),dth_var(2),dph_var(2),ztg_var(2)
+       real*4	stime,etime,zero
 
-	character*132	str_line
-
+       character*132	str_line
+       character*35 db_line 
+       character*1 db_st
 C Random Number Generation
 	integer*4 rnd_seed_flag
 	character*80 random_state_file
@@ -147,6 +148,11 @@ C Function definitions.
 	integer   runnum,runid,stat
 	real*4  secnds
 
+        character(len=1024) :: format_string
+        character*6 run_id
+        integer run_loc
+        integer found_run
+        integer dbc
         integer iquest
         common/quest/iquest(100)
 
@@ -375,22 +381,80 @@ c	read (chanin,1001) str_line
 	write(6,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,zoff)
 	if(.not.iss) stop 'ERROR (zoff) in setup!'
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Spectrometer offsets
+! Going try at find the correct offset in the db_run.dat
+        !write(runid,*)run_id
+        found_run=0
+        if(runid .lt. 4500) then
+                format_string = "(I4)"
+        else
+                format_string = "(I6)"
+        endif
+        write(run_id,format_string) runid
+        
+        write(6,*) 
+        write(6,*) "opening up db_run.dat for offsets looking for run "
+        write(6,*) run_id
+
+       dbc=0
+       filename = 'infiles/db_run.dat'
+       open(unit=44,status='old',file=filename)
+         read (44, "(a)",iostat=ierr) db_line
+       do
+         read (44, "(a)",iostat=ierr) db_line
+         if(db_line.ne."") read (db_line,*) db_st
+         if(db_st=="#") then
+                run_loc = index(db_line, run_id)
+                if(run_loc.ne.0)then
+                            write(6,*) db_line
+                            do
+                                read (44, "(a)",iostat=ierr) db_line
+                                if(db_line.ne."") read (db_line,*) db_st
+                                if(db_st=="#")exit
+                               
+                                run_loc= index(db_line, "off_x")
+                                if(run_loc.ne.0)then 
+         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_xoff
+                                        spec_xoff=spec_xoff*100
+                                  write(6,*) "spec_xoff= ",spec_xoff
+                                endif
+                                run_loc= index(db_line, "off_y")
+                                if(run_loc.ne.0)then
+         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_yoff
+                                        spec_yoff=spec_yoff*100
+                                  write(6,*) "spec_yoff= ",spec_yoff
+                                endif
+                                run_loc= index(db_line, "off_z")
+                                if(run_loc.ne.0)then
+         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_zoff
+                                        spec_zoff=spec_zoff*100
+                                  write(6,*) "spec_zoff= ",spec_zoff
+                                endif
+                                found_run=1 
+                            end do                    
+
+                endif
+         endif
+        if(found_run==1) EXIT
+       end do
+ 
+       ! EXIT 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	read (chanin, 1001) str_line
-	write(6,*) str_line(1:last_char(str_line))
-	iss = rd_real(str_line,spec_xoff)
-	if(.not.iss) stop 'ERROR (spect. xoff) in setup!'
+!	write(6,*) str_line(1:last_char(str_line))
+!	iss = rd_real(str_line,spec_xoff)
+!	if(.not.iss) stop 'ERROR (spect. xoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(6,*) str_line(1:last_char(str_line))
-	iss = rd_real(str_line,spec_yoff)
-	if(.not.iss) stop 'ERROR (spect. yoff) in setup!'
+!	write(6,*) str_line(1:last_char(str_line))
+!	iss = rd_real(str_line,spec_yoff)
+!	if(.not.iss) stop 'ERROR (spect. yoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(6,*) str_line(1:last_char(str_line))
-	iss = rd_real(str_line,spec_zoff)
-	if(.not.iss) stop 'ERROR (spect. zoff) in setup!'
+!	write(6,*) str_line(1:last_char(str_line))
+!	iss = rd_real(str_line,spec_zoff)
+!	if(.not.iss) stop 'ERROR (spect. zoff) in setup!'
 
 	read (chanin, 1001) str_line
 	write(6,*) str_line(1:last_char(str_line))

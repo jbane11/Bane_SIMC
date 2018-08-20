@@ -34,7 +34,7 @@ c     >            'mc_1.rzdat','mc_2.rzdat','mc_3.rzdat'/
         real*4 dt,phasespcor,denscor,delcor,phase_space
         real*4 hmsprlo,hmstof,hms34,rate,rate_dat,poscs,t1
         real*8 xb
-
+        real*4 ch1, ch2, ch3, ch4
 
         real*4 ex,z,emean,de
 
@@ -183,10 +183,10 @@ CCCCCC        Read in target data from file                CCCCCCC
           read(17,*) targetdata
           
           if(i==tarid) then
-c             write(6,*) "8888888888888888888888888"
-c             write(6,*) tarid
-c             write(6,*)    targetdata
-c             write(6,*) "-----",targetdata(6),"-------",targetdata(4)
+             write(6,*) "target info"
+             write(6,*) tarid
+             write(6,*)    targetdata
+             write(6,*) "-----",targetdata(6),"-------",targetdata(4)
              lumdata = targetdata(6)*6.022137e-10/targetdata(4)  !!g/cm2 * 6.02e23/mol*1e-33 cm2/nb/(g/mol)
      &            *bcmavecharge/1.602177e-13          !!           * 1e-6 C/s /1.602e-19 C/e
            endif
@@ -198,11 +198,11 @@ c             write(6,*) "-----",targetdata(6),"-------",targetdata(4)
 	
 c       scal factor.
 	fract = lumdata*phase_space/ngentot
-	fract = fract/1000.                        !if use Erics model (ub)
+	fract = fract !/1000.                        !if use Erics model (ub)
 c	write(6,*) 'fract = ',fract
 !!      density correction for gas target
 	denscor = 1.0 - bmcur/25*0.2
-	if(tarid.GT.3) denscor = 1.0
+	if(tarid.GT.4) denscor = 1.0
 	
 	eff_cer = 1.0		!!!!  Cer Efficiency  !!!!
 	eff_cal = 1.0
@@ -240,7 +240,7 @@ c        call HCDIR(directory,'R')
                  
  	m = 0
         m = m+1
-        NtupleTag(m) = 'xfoc'
+        NtupleTag(m) = 'xfoc'                           !1
         m = m+1
         NtupleTag(m) = 'yfoc'
         m = m+1 
@@ -248,7 +248,7 @@ c        call HCDIR(directory,'R')
         m = m+1
         NtupleTag(m) = 'ypfoc'
         m = m+1
-        NtupleTag(m) = 'ytari'
+        NtupleTag(m) = 'ytari'                          !5
         m = m+1
         NtupleTag(m) = 'deltai'
         m = m+1
@@ -258,13 +258,13 @@ c        call HCDIR(directory,'R')
         m = m+1
         NtupleTag(m) = 'ytar'
         m = m+1
-        NtupleTag(m) = 'delta'  
+        NtupleTag(m) = 'delta'                          !10
         m = m+1
         NtupleTag(m) = 'yptar' 
         m = m+1
         NtupleTag(m) = 'xptar'        !dphr !m=12
          m = m+1          
-        NtupleTag(m) = 'ztari'      !16
+        NtupleTag(m) = 'ztari'      !13
 	m = m+1          
         NtupleTag(m) = 'ztar'
 	m =m+1
@@ -272,9 +272,9 @@ c        call HCDIR(directory,'R')
         m = m+1
         NtupleTag(m) =  'x_stop'
         m = m+1
-        NtupleTag(m) =  'y_stop'   !20
+        NtupleTag(m) =  'y_stop'   !17
 	m = m+1          
-	NtupleTag(m) = 'born'
+	NtupleTag(m) = 'born'           !18
         m = m+1
         NtupleTag(m) = 'rci'
         m = m+1
@@ -282,7 +282,7 @@ c        call HCDIR(directory,'R')
         m = m+1
         NtupleTag(m) = 'th_spec'
         m = m+1
-        NtupleTag(m) = 'q2'
+        NtupleTag(m) = 'q2'       !22
         m = m+1
         NtupleTag(m) = 'w2'
 	m=m+1
@@ -293,7 +293,7 @@ c        call HCDIR(directory,'R')
         NtupleTag(m) = 'rate'
 
 	m=m+1
-	NtupleTag(m) = 'tarid'
+	NtupleTag(m) = 'tarid'          !27
 	
         ntuplesize = m
 	
@@ -346,9 +346,7 @@ c	write(6,*) ntuple_contents(17)
 	 p_rec = ntuple_contents(23) /1000.  !p_recon in MeV to GeV
 
 c         hse = hsec*(1.+delini/100.)
-         
          hsev = hse
-
 c         write(6,*) hse,emean,de
 
          hsp = hse
@@ -396,7 +394,11 @@ CCCCCCC           Get Model Cross section in nb/SR/GeV, and born/rad factor     
 
 
          call rc_mod(firstr,thetaini,thetacrad,
-     &                                    hsev,tarid,rci,born,id)
+     &                                    hsev,tarid,rci,born)
+        if(born.NE.born) then
+                rci=1
+                born=0.0
+        endif
 c       
 c	 sf(born<0) born=0
 c   Hongxia 2018-----pass w2 instead of hsev to rc_mod
@@ -412,7 +414,7 @@ c          write(6,*) dt,phasespcor
  
 c         write(6,*) ebeam,hse,thetaini,target,born
 
-c         write(6,*) xb,AA,emc
+c         write(6,*) xb,emc
 
          if(abs(xptarini).LT.dxp.AND.abs(yptarini).LT.dyp.AND.
      &      delini.GT.deldown.AND.delini.LT.delup.AND.born.GE.0.) then
@@ -504,25 +506,25 @@ CCCCCCC            Fill new Ntuple                   CCCCCCCCC
          j = 18
          ntu(j) = born *phasespcor*delcor   !nb/MeV/sr
          j = j+1
-         ntu(j) = rci
+         ntu(j) = rci                           !19
 	 j = j+1
          ntu(j) = p_rec !use reconstructed p
          j = j+1
-         ntu(j) = hstheta
+         ntu(j) = hstheta       
 	 j = j+1
-         ntu(j) = q2
+         ntu(j) = q2                    !22
          j = j+1
          ntu(j) = w2
 	 j = j+1
 	 ntu(j) = xb
 	 j = j+1
-	 ntu(j) = ntu(18)/rci*fract
+	 ntu(j) = ntu(18)/rci*fract     !25
 	 j = j+1
 	 ntu(j) = ntu(j-1)*bmcur1/bcm1charge
 c	 j = j+1
-	 rate = rate + ntu(j)
+	 rate = rate_dat + ntu(j)
 c	 ntu(j) = rate
-c
+c        write(6,*) rci
 c	 if(rate>1000000.or.rate<0) then
 c	 write(6,*) 'rate =',rate
 c
