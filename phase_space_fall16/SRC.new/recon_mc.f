@@ -198,10 +198,10 @@ CCCCCC        Read in target data from file                CCCCCCC
 	
 c       scal factor.
 	fract = lumdata*phase_space/ngentot
-	fract = fract !/1000.                        !if use Erics model (ub)
+	fract = fract /1000.                        !if use Erics model (ub)
 c	write(6,*) 'fract = ',fract
 !!      density correction for gas target
-	denscor = 1.0 - bmcur/25*0.2
+	denscor = 1.0 !- bmcur/25*0.2
 	if(tarid.GT.4) denscor = 1.0
 	
 	eff_cer = 1.0		!!!!  Cer Efficiency  !!!!

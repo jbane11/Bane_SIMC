@@ -1,6 +1,6 @@
 my_objs = elastic.o gauss1.o mt19937.o f2allm.o r1990.o rcint.o rcext.o \
-          rc_mod.o csb_jan05.o pos.o yp_optcor.o samp_eloss.o ran3.o \
-          model_new.o f1f209.o  
+          rc_mod.o csb_jan05.o pos.o yp_optcor.o           \
+	  samp_eloss.o ran3.o model_new.o f1f209.o  
 
 INC = hms.cmn, resparms.cmn
 

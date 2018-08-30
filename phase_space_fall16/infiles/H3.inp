@@ -6,12 +6,12 @@
      1000000	Monte-Carlo trials
      0          Spectrometer momentum (in MeV/c)
      0		Spectrometer angle (in degrees)
-    -7.0	M.C. DP/P  down limit 
-     7.0	M.C. DP/P  up   limit 
-    -70.0	M.C. dydz down limit (mr)
-     70.0	M.C. dydz down limit (mr)  
-    -70.0	M.C. dxdz down limit (mr)
-     70.0	M.C. dxdz down limit (mr)
+    -10.0	M.C. DP/P  down limit 
+     10.0	M.C. DP/P  up   limit 
+    -50.0	M.C. dydz down limit (mr)
+     50.0	M.C. dydz down limit (mr)  
+    -50.0	M.C. dxdz down limit (mr)
+     50.0	M.C. dxdz down limit (mr)
      0.00	Horiz beam spot size in cm (Full width of +/- 1 sigma)
      0.00	Vert  beam spot size in cm (Full width of +/- 1 sigma)
      25.0       Thickness of target (Full width, cm)
@@ -21,7 +21,7 @@
      100.0	Theta reconstruction cut (half width in mr)
      100.0	Phi   reconstruction cut (half width in mr)
      50.0	ZTGT  reconstruction cut (Half width in cm)
-     62382.3	one radiation length of target material (in cm)
+     751200	one radiation length of target material (in cm) from PDG table
      0.0	Beam x offset (cm)  +x = beam left
      0.0	Beam y offset (cm)  +y = up
      0.0	Target z offset (cm)+z = downstream (0.25)

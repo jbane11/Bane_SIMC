@@ -6,12 +6,12 @@
      1000000	Monte-Carlo trials
      0          Spectrometer momentum (in MeV/c)
      0		Spectrometer angle (in degrees)
-    -7.0	M.C. DP/P  down limit 
-     7.0	M.C. DP/P  up   limit 
-    -70.0	M.C. dydz down limit (mr)
-     70.0	M.C. dydz down limit (mr)  
-    -70.0	M.C. dxdz down limit (mr)
-     70.0	M.C. dxdz down limit (mr)
+    -10.0	M.C. DP/P  down limit 
+     10.0	M.C. DP/P  up   limit 
+    -100.0	M.C. dydz down limit (mr)
+     100.0	M.C. dydz down limit (mr)  
+    -100.0	M.C. dxdz down limit (mr)
+     100.0	M.C. dxdz down limit (mr)
      0.00	Horiz beam spot size in cm (Full width of +/- 1 sigma)
      0.00	Vert  beam spot size in cm (Full width of +/- 1 sigma)
      25.0       Thickness of target (Full width, cm)
