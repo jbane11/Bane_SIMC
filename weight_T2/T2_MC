@@ -7,12 +7,36 @@ gendir=/home/jbane/halla_xem/phase_space_fall16
 tabledir=~/tritium/T2_externals
 weightdir=~/halla_xem/weight_T2
 doall=1
-rc=0
-redoall=0
+rc=1
+redoall=1
+
+if [[ "$#" -ge "0" ]] 
+then 
+	Target=$1
+	if [[ ${Target} == "-h" || ${Target} == "help"  ]]
+	then
+		echo "--------HELP------"
+		echo "You can run with the arguments"
+		echo "Target kin# run# tgtID# "
+		echo "You can also use the following tags"
+		echo "OK to gen and make table(bool) and recreate already made root files(bool)"
+		exit
+	fi
+fi
 
 if [[ "$#" -ge "4" ]] 
 then 
 	Target=$1
+	if [[ ${Target} == "-h" || ${Target} == "help"  ]]
+	then
+		echo "--------HELP------"
+		echo "You can run with the arguments"
+		echo "Target kin# run# tgtID# "
+		echo "You can also use the following tags"
+		echo "OK to gen and make table(bool) and recreate already made root files(bool)"
+		exit
+	fi
+
 	kin=$2
 	runnum=$3
 	ID=$4
@@ -20,9 +44,9 @@ then
 	then
 		doall=$5
 	fi
-	if [[ "$#" -gt "" ]]
+	if [[ "$#" -gt "5" ]]
 	then
-		rc=$5
+		rc=$6
 	fi
 else 
 	echo "Please enter Target " 
@@ -35,30 +59,35 @@ else
 	read ID
 fi
 
-if [ -e rootfiles/mc${runnum}.root -a ${rc}==1 ]
+if [ -e rootfiles/mc${runnum}.root ]
 then
-	echo "The mc root file exist. Do you want to recreate?"
-	read rc
-	if [ ${rc} == "0" ]
+	if [ ${rc}==1 ]
 	then
-		exit
-	else
 		rm -v rootfiles/mc${runnum}_*.root
+	else
+		echo "The mc root file exist. Do you want to recreate?"
+		read ${rc}
+		if [ ${rc} == "0" ]
+		then
+			exit
+		else
+			rm -v rootfiles/mc${runnum}_*.root
+		fi	
 	fi
 fi
-	
 
 
-if [ -f mcrun_info/input_"$Target"_kin"$kin".dat ] 
+if [ -f mcrun_info/input.dat ] 
 then
 	echo "Linking the correct mc info file" 
-	ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
+	#ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
 else
 	if (( ${doall} ))
 	then
 		echo "Making runinfo!!"
 		cd mcrun_info
-		cp input_D2_kin2.dat input_${Target}_kin${kin}.dat
+		#cp input.dat input_${Target}_kin${kin}.dat
+		#ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
 		cd ..
 	else
 		echo "Please create input_"$Target"_kin"$kin".dat in /mcrun_info" 
@@ -97,31 +126,56 @@ elif [ "$Target" == "He3" ]
 then
         echo "He3"
         tarid=4
+
+elif [ "$Target" == "carbon_foil" ]
+then
+        echo "foil"
+        tarid=7
+
+elif [ "$Target" == "optics" ]
+then
+        echo "optics"
+        tarid=8
 else
         echo "dummy"
         tarid=0
 fi
 
+
+if [[ ${ID} -lt 5 ]]
+then
+
 for x in $tarid 5 6
 do
 	ID=$x
 
-
-	if [ -f ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat ] 
+	if [[ -e "${gendir}/worksim/${Target}_${runnum}_${ID}.rzdat" ]] 
 	then
-		echo "Linking the correct rzdat run file" 
-		ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
+		if [ "${doall}" == 1 -a "${rc}" == 1 ] 
+		then
+			cd $gendir
+			rm -v worksim/${Target}_${runnum}_${ID}.rzdat
+			sh generate ${Target} ${runnum} ${ID} ${kin}
+			cd $weightdir
+			echo "Linking the correct rzdat run file" 
+			ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
+		else
+			echo "Linking the correct rzdat run file" 
+			ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
+		fi
 	else
-	
-		if (( ${doall} )) 
+		if [ "${doall}" == 1 ] 
 		then
 			cd $gendir
 			sh generate ${Target} ${runnum} ${ID} ${kin}
 			cd $weightdir
+			echo "Linking the correct rzdat run file" 
+			ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
 		else
 			echo "Please generate the rzdat file needed"
 			exit
 		fi
+	
 	fi
 
 
@@ -137,7 +191,7 @@ do
 
 	modtgt="${tgt}${suffix[${tgtid}]}"
 
-	if [ -e /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out -o ${redoall}=="0" ]
+	if [ -e "/home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out" -o ${redoall}=="0" ]
 	then
 		echo "Making a link to the cross section table"
 		ln -sf /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out rc94.dat
@@ -148,6 +202,8 @@ do
 			cd $tabledir	
 			sh CS ${tgt} ${kin} ${ID}
 			cd $weightdir
+			echo "Making a link to the cross section table"
+			ln -sf /home/jbane/tritium/T2_externals/OUT/kin${kin}_${Target}_${ID}.out rc94.dat
 		else
 			echo "Make the table!! Try sh CS ${tgt}  ${kin} ${ID} "
 			exit
@@ -179,5 +235,71 @@ done
 analyzer -b -l -q "merge.C(${runnum})"
 #rm -v rootfiles/mc${runnum}_*.root
 
+elif [[ ${ID} == 7 ]]
+then
+	
+	tgt=C12
+	if [ -e ../phase_space_fall16/worksim/carbon_foil_${runnum}_${ID}.rzdat -o ${rc}==1 ] 
+	then
+		if (( ${doall} )) 
+		then
+			cd $gendir
+			sh generate carbon_foil ${runnum} ${ID} ${kin}
+			cd $weightdir
+			echo "Linking the correct rzdat run file" 
+			ln -sf ../phase_space_fall16/worksim/carbon_foil_${runnum}_${ID}.rzdat run.rzdat
+		else
+			echo "Please generate the rzdat file needed"
+			exit
+		fi
+	else
+	
+		echo "Linking the correct rzdat run file" 
+		ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
+	fi
 
+	if [ -e "${tabledir}/OUT/kin${kin}_${tgt}_${ID}.out" -o ${redoall}=="0" ]
+	then
+		echo "Making a link to the cross section table"
+		ln -sf ${tabledir}/OUT/kin${kin}_${tgt}_${ID}.out rc94.dat
+	else
+		if (( ${doall} ))
+		then
+			echo "Will make a cross section table for this run"
+			cd $tabledir	
+			sh CS ${tgt} ${kin} ${ID}
+			cd $weightdir
+			echo "Making a link to the cross section table"
+			ln -sf ${tabledir}/OUT/kin${kin}_${tgt}_${ID}.out rc94.dat
+		else
+			echo "Make the table!! Try sh CS ${tgt}  ${kin} ${ID} "
+			exit
+		fi
+	fi
+
+	if [ ! -f "run.rzdat" ]
+	then
+		echo "Exiting, somthing is wrong"
+		#exit
+	fi
+
+	RUN=${Target}_kin${kin}
+
+	./recon_mc ${runnum} ${ID} 
+	echo " "
+	echo "Just finish  $RUN!!!" 
+	echo " "
+	echo " Let's make those ntuples root files and move them to the proper places!!!"
+	echo " "
+	h2root "mcrun.rzdat"
+	echo " "
+	mv "mcrun.root" "rootfiles/mc${runnum}.root"
+	echo " "
+	mv "mcrun.rzdat" "mc_rzdat/mc${runnum}_${ID}.rzdat"
+
+elif [[ ${ID} == 8 ]]
+then
+	echo "optics not ready"
+	exit
+fi
 
