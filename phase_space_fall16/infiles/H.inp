@@ -1,6 +1,6 @@
 !-----------------------------------------------------------------------------
 ! Input file for MC_HRS_SINGLE
-!He3 for Tritium 
+!D2 for Tritium 
 !theta =y' phi =y'
 !------------------------------------------------------------------------------
      1000000	Monte-Carlo trials
@@ -21,7 +21,7 @@
      100.0	Theta reconstruction cut (half width in mr)
      100.0	Phi   reconstruction cut (half width in mr)
      50.0	ZTGT  reconstruction cut (Half width in cm)
-     33890.4	one radiation length of target material (in cm)
+     22419.4	one radiation length of target material (in cm)
      0.0	Beam x offset (cm)  +x = beam left
      0.0	Beam y offset (cm)  +y = up
      0.0	Target z offset (cm)+z = downstream (0.25)
@@ -39,9 +39,9 @@
      0          flag for taking input from data file
      1          flag to simulate energy loss for outgoing particles 
      0          flag to correct energy loss for outgoing particles in reconstruction 
-     0.00306	target density in g/cm^3
-     2		target atomic number Z
-     3.02  	target standard atomic weight A   
+     0.005686	target density in g/cm^3
+     1		target atomic number Z
+     1.01  	target standard atomic weight A   
      0.475      target width(radius) in cm. foil: d=0.375in
-     0.00275      thickness of end caps in cm, for beer can target
-     0.00482      thickness of side wall in cm, for beer can target
+     0.00255      thickness of end caps in cm, for beer can target
+     0.0040      thickness of side wall in cm, for beer can target
