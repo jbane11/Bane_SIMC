@@ -8,27 +8,27 @@
      0		Spectrometer angle (in degrees)
     -10.0	M.C. DP/P  down limit 
      10.0	M.C. DP/P  up   limit 
-    -50.0	M.C. dydz down limit (mr)
-     50.0	M.C. dydz down limit (mr)  
-    -50.0	M.C. dxdz down limit (mr)
-     50.0	M.C. dxdz down limit (mr)
-     0.00	Horiz beam spot size in cm (Full width of +/- 1 sigma)
-     0.00	Vert  beam spot size in cm (Full width of +/- 1 sigma)
-     .450       Thickness of target (Full width, cm)
-     0.1        Raster half-width x (cm)
-     0.1        Raster half-width y (cm)
+    -100.0	M.C. dydz down limit (mr)
+     100.0	M.C. dydz down limit (mr)  
+    -100.0	M.C. dxdz down limit (mr)
+     100.0	M.C. dxdz down limit (mr)
+     0.001	Horiz beam spot size in cm (Full width of +/- 1 sigma)
+     0.001	Vert  beam spot size in cm (Full width of +/- 1 sigma)
+     0.01     Thickness of target (Full width, cm)
+     0.01        Raster half-width x (cm)
+     0.01        Raster half-width y (cm)
      50.0	DP/P  reconstruction cut (half width in % )
      100.0	Theta reconstruction cut (half width in mr)
      100.0	Phi   reconstruction cut (half width in mr)
      50.0	ZTGT  reconstruction cut (Half width in cm)
      21.35 	one radiation length of target material (in cm) from PDG table
-     -0.00449	Beam x offset (cm)  +x = beam left
-     0.0036	Beam y offset (cm)  +y = up
-     0.30	Target z offset (cm)+z = downstream (0.25)
-     0.0       Spectrometer x offset (cm) +x = down
-     0.00      Spectrometer y offset (cm)
-     0          Spectrometer z offset (cm)
-     0.0        Spectrometer xp offset (mr)
+     -0.2	Beam x offset (cm)  +x = beam left
+     -0.03	Beam y offset (cm)  +y = up
+     0.549	Target z offset (cm)+z = downstream (0.25)
+     0.0        Spectrometer x offset (cm) +x = down
+     0.00       Spectrometer y offset (cm)
+     0.00       Spectrometer z offset (cm)
+    -0.0        Spectrometer xp offset (mr)
      0.0        Spectrometer yp offset (mr)
      0		particle identification :e=0, p=1, d=2, pi=3, ka=4
      1		flag for multiple scattering
@@ -45,3 +45,6 @@
      0.475      target width(radius) in cm. foil: d=0.375in
      0.00      thickness of end caps in cm, for beer can target
      0.00      thickness of side wall in cm, for beer can target
+
+
+

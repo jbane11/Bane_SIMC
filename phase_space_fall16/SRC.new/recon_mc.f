@@ -407,6 +407,7 @@ c     &                                    w2,tarid,rci,born,id)
          dt = thetaini - trad
          phasespcor = 1./cos(dt)/cos(dt)/cos(dt)
 
+        phasespcor= 1.0
 !!!!!!!     Changed on 6/19/01  !!!!!!!!
 c          phasespcor = 1.
 
@@ -455,6 +456,7 @@ c          if(delrec.GT.-9.0.AND.delrec.LT.-8.0) delcor=1.00
 c          if(delrec.GT.-6.0.AND.delrec.LT.-5.0) delcor=delcor/1.012
           if(delrec.GT.9.0.AND.delrec.LT.10.0) delcor=delcor/0.99
 
+        delcor=1;
 CCCCCCC   Now Get RC corrections for event    CCCCCCCC
 
 c          call rc_mod(firstr,thetaini,thetacrad,hsev,tarid,rci,t1,id)
