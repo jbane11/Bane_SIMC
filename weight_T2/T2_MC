@@ -1,11 +1,11 @@
 #!/bin/bash
-#set -x
+set -x
 ### Shell script for both making all the links and running th monte carlo
 
-
+cdir=$(pwd)
 gendir=/home/jbane/halla_xem/phase_space_fall16
 tabledir=~/tritium/T2_externals
-weightdir=~/halla_xem/weight_T2
+weightdir=/home/jbane/halla_xem/weight_T2
 doall=1
 rc=1
 redoall=1
@@ -85,30 +85,12 @@ else
 	if (( ${doall} ))
 	then
 		echo "Making runinfo!!"
-		cd mcrun_info
+		#cd "${weightdir}/mcrun_info"
 		#cp input.dat input_${Target}_kin${kin}.dat
 		#ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
-		cd ..
+		#cd ..
 	else
 		echo "Please create input_"$Target"_kin"$kin".dat in /mcrun_info" 
-		exit
-	fi
-fi
-
-if [ -f datarun_info/run${runnum}.in ] 
-then
-	echo "Linking the correct data run file" 
-	ln -sf datarun_info/run${runnum}.in reconmc.in
-	
-else	
-	if (( ${doall} ))
-	then
-		echo "Making datrun_info"
-		cd datarun_info
-		sh gen_datarun ${runnum} ${kin} ${ID}
-		cd ..
-	else
-		echo "Please create run_${runnum}.in in /datarun_info" 
 		exit
 	fi
 fi
@@ -141,6 +123,29 @@ else
         tarid=0
 fi
 
+if [ "$ID" == "10" ]
+then
+	ID=$tarid
+fi
+
+if [ -f datarun_info/run${runnum}.in ] 
+then
+	echo "Linking the correct data run file" 
+	ln -sf datarun_info/run${runnum}.in reconmc.in
+	
+else	
+	if (( ${doall} ))
+	then
+		echo "Making datrun_info"
+		cd "${weightdir}/datarun_info"
+		sh gen_datarun ${runnum} ${kin} ${ID}
+		cd ${cdir}
+		ln -sf datarun_info/run${runnum}.in reconmc.in 
+	else
+		echo "Please create run_${runnum}.in in /datarun_info" 
+		exit
+	fi
+fi
 
 if [[ ${ID} -lt 5 ]]
 then

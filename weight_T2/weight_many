@@ -1,14 +1,20 @@
 #!bin/bash
-#set -x
+set -x
 if [[ $# -ge "1" ]]
 then
 	if [[ $1 == "-t" ]]
 	then
 		tgt=$2
 		kin=$3
+		kin1=$4
 	elif [[ $1 == "-k" ]]
 	then 
 		kin=$2
+		if [[ $# -gt 2 ]]
+		then
+			tar=$3
+		fi
+		
 	elif [[ $1 == "-r" ]]
 	then
 		begin=$2
@@ -33,10 +39,19 @@ then
 	then
 		tgtL=Tritium
 		ID=3
+		ID=2
 	elif [[ "${tgt}" == "D2" ]]
 	then
 		tgtL=Deuterium
-		ID=2
+	elif [ "${tgt}" == "carbon_foil" ]
+	then
+        	tgtL="Carbon"
+	        ID=7
+
+	elif [ "${tgt}" == "optics" ]
+	then
+	        tgtL="Optics"
+	        ID=8
 	fi
 	
 	while IFS=, read run kinin theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
@@ -52,26 +67,36 @@ elif [ "$1" ==  "-k" ]
 then
 	while IFS=, read run kinin theta target T2_LT T2_count T2_scaler bcm_dnew dnew_count Clock_count ps_T1 ps_T2 ps_T8
 	do
+
+		echo $run $target 	
 		if [ "${kin}" == "${kinin}" ] 
 	       	then
 			tgt=""
 			notgt=0
-			if [[ "${target}" == "Helium" ]]
+			if [[ "${target}" == 'Helium' ]]
 			then
 				tgt=He3
 				ID=4
 				notgt=1
-			elif [[ "${taget}" == "Tritium" ]]
+			elif [[ "${target}" == 'Tritium' ]]
 			then
 				tgt=H3
 				ID=3
 				notgt=1
-			elif [[ "${target}" == "Deuterium" ]]
+			elif [[ "${target}" == 'Deuterium' ]]
 			then
 				tgt=D2
 				ID=2
 				notgt=1
 			fi
+			if [[ $tar != "" ]]
+			then 
+				if [[ $tar != $tgt ]]
+				then
+					continue
+				fi
+			fi
+
 			if [ "$notgt" -eq "1" ]
 			then
 				echo $run ${tgt} ${kinin} $ID
