@@ -49,7 +49,7 @@ C Local declarations.
      >			chanin	/1/,
      >			chanout	/2/,
      >			n_trials,trial,
-     >			tmp_int
+     >			tmp_int,lookup_spec_offsets,xswitch
 
 	logical*4	iss,extended
 
@@ -60,6 +60,8 @@ C Event limits, topdrawer limits, physics quantities
 	real*8 gen_lim_down(3)
 
 	real*8 cut_dpp,cut_dth,cut_dph,cut_z	!cuts on reconstructed quantities
+	real*4 input_xpos, input_ypos, input_xwidth, input_ywidth !Input beam info from runplan
+	real*4 tar_zoffset
 	real*8 xoff,yoff,zoff                   !Beam offsets (z target offset)
 	real*8 spec_xoff,spec_yoff,spec_zoff    !Spectrometer offsets
 	real*8 spec_xpoff, spec_ypoff           !Spectrometer angle offsets
@@ -68,7 +70,7 @@ C Event limits, topdrawer limits, physics quantities
 	real*8 x,y,z,dpp,dxdz,dydz,t1,t2,t3,t4	!temporaries
 	real*8 musc_targ_len			!target length for multiple scattering
 	real*8 m2				!particle mass squared.
-	real*8 mass                             !particle mass  
+	real*8 mass                             !particle mass
 
 	real*8 rad_len_cm			!conversion r.l. to cm for target
 	real*8 pathlen				!path length through spectrometer.
@@ -79,8 +81,8 @@ C DJG Variables used for target calcs
 
 
 C from barak-------for energy loss
-	real*8 targ_Z,targ_A  
-	real*8 targ_rho                         !target density in g/cm^3 
+	real*8 targ_Z,targ_A
+	real*8 targ_rho                         !target density in g/cm^3
 
 	real*8 s_air, s_mylar, s_target0
 
@@ -129,7 +131,7 @@ C Hardwired control flags.
        real*4	stime,etime,zero
 
        character*132	str_line
-       character*35 db_line 
+       character*35 db_line
        character*1 db_st
 C Random Number Generation
 	integer*4 rnd_seed_flag
@@ -164,6 +166,9 @@ C Initialize
 C xiaochao:
 C using SIMC unstructured version
 C
+
+	lookup_spec_offsets=1
+	xswitch=0
 	lSTOP_trials	= 0
 	lSTOP_col_entr  = 0
 	lSTOP_col_exit  = 0
@@ -211,9 +216,9 @@ C	read(*,1968) rawname
 	read(12,*) str_line
 	write(6,*) str_line
 	do
-	   read(12,*,iostat=stat) runnum,p_spec,p_spec,th_spec
+	   read(12,*,iostat=stat) runnum,p_spec,p_spec,th_spec, input_xpos, input_ypos,input_xwidth,input_ywidth,tar_zoffset
 	   if(runnum .EQ. runid) exit
-	   if(stat/=0) then            
+	   if(stat/=0) then
 	      write(6,*) "Can't find run #",
      &           id, " info in infiles/runplan.inp. Stopped"
 	      stop
@@ -222,9 +227,9 @@ C	read(*,1968) rawname
 	write(6,*) "--found run #",id
 	p_spec = p_spec*1000 !gev to mev
 	write(6,*)  "ep =",p_spec,"angle =",th_spec
-	
 
-!       Read the flag for vertex generating location 
+
+!       Read the flag for vertex generating location
 !      ( 1/2/3: D2,H3,He3 gas
 !      /4/5: entrance window, exit window)
 !       6: single carbon foil
@@ -245,7 +250,7 @@ C Initialize HBOOK/NTUPLE if used.
 	  call hlimit(pawc_size)
 c	  filename = 'worksim/'//rawname(1:last_char(rawname))//'.rzdat'
 c	  filename = 'worksim/'//rawname(1:last_char(rawname))
-c	  write(6,*) filename  
+c	  write(6,*) filename
 	  write(filename,'("worksim/T2_",a5,"_",i1,".rzdat")') id,tarid
 !	  call hropen(30,'HUT',filename,'N',1024,i)
 	  iquest(10) = 256000
@@ -255,13 +260,13 @@ c	  write(6,*) filename
 !   http://wwwasd.web.cern.ch/wwwasd/cgi-bin/listpawfaqs.pl/7
 ! the file size is limited to ~260M no matter how I change iquest !
 	  call hropen(30,'HUT',filename,'NQ',4096,i) !CERNLIB
- 
+
 	  if (i.ne.0) then
 	    write(6,*),'HROPEN error: istat = ',i
 	    stop
 	  endif
 	  call hbookn(1,'HUT NTUPLE',nhut,'HUT',10000,hut_nt_names)
-	endif	   
+	endif
 
 C Open Output file.
 c	write(filename,'("outfiles/src_",i5,"_",i1,".hist")') runid,tarid
@@ -317,6 +322,7 @@ c	read (chanin,1001) str_line
 	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
 	  gen_lim_up(i) = gen_lim(i)
 	enddo
+		write(6,*) "Done with MC limits"
 !	do i=1,3
 !	   write(*,*)'gen_lim_up/down = ',gen_lim_up(i),' ',gen_lim_down(i)
 !	enddo
@@ -337,7 +343,7 @@ c	read (chanin,1001) str_line
 	   iss = rd_real(str_line,gen_lim(i))
 	   if (.not.iss) stop 'ERROR (Fast Raster) in setup'
 	enddo
-
+	write(6,*) "Done with Raster inputs"
 ! Cuts on reconstructed quantities
 	read (chanin,1001) str_line
 	write(6,*) str_line(1:last_char(str_line))
@@ -365,7 +371,7 @@ c	read (chanin,1001) str_line
 	if(tarid==4) rad_len_cm = 71.07 !He3
 	if(tarid==5.or.tarid==6) rad_len_cm = 8.89 !Al
 	if(tarid==7) rad_len_cm = 19.32 !C`
-	
+
 ! Beam and target offsets
 	read (chanin, 1001) str_line
 	write(6,*) str_line(1:last_char(str_line))
@@ -378,13 +384,27 @@ c	read (chanin,1001) str_line
 	if(.not.iss) stop 'ERROR (yoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(6,*) str_line(1:last_char(str_line))
-	iss = rd_real(str_line,zoff)
-	if(.not.iss) stop 'ERROR (zoff) in setup!'
+c	write(6,*) str_line(1:last_char(str_line))
+c	iss = rd_real(str_line,zoff)
+	zoff = tar_zoffset
+	write(6,*) "Z offset = ", zoff
+c	if(.not.iss) stop 'ERROR (zoff) in setup!'
+	write(6,*) "Done with beam and target offsets"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Spectrometer offsets
 ! Going try at find the correct offset in the db_run.dat
         !write(runid,*)run_id
+	read (chanin, 1001) str_line
+	write(6,*) str_line(1:last_char(str_line))
+	iss = rd_int(str_line,lookup_spec_offsets)
+	if(.not.iss) stop 'ERROR (lookup) in setup!'
+
+	read (chanin, 1001) str_line
+	write(6,*) str_line(1:last_char(str_line))
+	iss = rd_int(str_line,xswitch)
+	if(.not.iss) stop 'ERROR (xswitch) in setup!'
+
+	if(lookup_spec_offsets .eq. 1) then
         found_run=0
         if(runid .lt. 4500) then
                 format_string = "(I4)"
@@ -392,8 +412,8 @@ c	read (chanin,1001) str_line
                 format_string = "(I6)"
         endif
         write(run_id,format_string) runid
-        
-        write(6,*) 
+
+        write(6,*)
         write(6,*) "opening up db_run.dat for offsets looking for run "
         write(6,*) run_id
 
@@ -412,49 +432,76 @@ c	read (chanin,1001) str_line
                                 read (44, "(a)",iostat=ierr) db_line
                                 if(db_line.ne."") read (db_line,*) db_st
                                 if(db_st=="#")exit
-                               
-                                run_loc= index(db_line, "off_x")
-                                if(run_loc.ne.0)then 
-         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_xoff
-                                        spec_xoff=spec_xoff*100
-                                  write(6,*) "spec_xoff= ",spec_xoff
-                                endif
-                                run_loc= index(db_line, "off_y")
-                                if(run_loc.ne.0)then
-         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_yoff
-                                        spec_yoff=spec_yoff*100
-                                  write(6,*) "spec_yoff= ",spec_yoff
-                                endif
+!!! switch x and y
+  															if( xswitch .eq. 1) then
+
+	                                run_loc= index(db_line, "off_x")
+	                                if(run_loc.ne.0)then
+	         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_yoff
+	                                        spec_yoff=spec_yoff*100
+	                                  write(6,*) "spec_yoff= ",spec_yoff
+	                                endif
+	                                run_loc= index(db_line, "off_y")
+	                                if(run_loc.ne.0)then
+	         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_xoff
+	                                        spec_xoff=spec_xoff*100
+	                                  write(6,*) "spec_xoff= ",spec_xoff
+	                                endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!
+! x=x y=y
+																else
+																		run_loc= index(db_line, "off_x")
+		                                if(run_loc.ne.0)then
+		         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_xoff
+		                                        spec_xoff=spec_xoff*100
+		                                  write(6,*) "spec_xoff= ",spec_xoff
+		                                endif
+		                                run_loc= index(db_line, "off_y")
+		                                if(run_loc.ne.0)then
+		         read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_yoff
+		                                        spec_yoff=spec_yoff*100
+		                                  write(6,*) "spec_yoff= ",spec_yoff
+		                                endif
+																endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                                 run_loc= index(db_line, "off_z")
                                 if(run_loc.ne.0)then
          read(db_line(1+scan(db_line,"=",back=.true.):),*) spec_zoff
                                         spec_zoff=spec_zoff*100
                                   write(6,*) "spec_zoff= ",spec_zoff
                                 endif
-                                found_run=1 
-                            end do                    
+                                found_run=1
+                            end do
 
                 endif
          endif
         if(found_run==1) EXIT
-       end do
- 
-       ! EXIT 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	read (chanin, 1001) str_line
-!	write(6,*) str_line(1:last_char(str_line))
-!	iss = rd_real(str_line,spec_xoff)
-!	if(.not.iss) stop 'ERROR (spect. xoff) in setup!'
+			end do
+c read the lines
+			 	read (chanin, 1001) str_line
+				read (chanin, 1001) str_line
+				read (chanin, 1001) str_line
 
-	read (chanin, 1001) str_line
-!	write(6,*) str_line(1:last_char(str_line))
-!	iss = rd_real(str_line,spec_yoff)
-!	if(.not.iss) stop 'ERROR (spect. yoff) in setup!'
+	else
+  		read (chanin, 1001) str_line
+			write(6,*) str_line(1:last_char(str_line))
+			iss = rd_real(str_line,spec_xoff)
+			if(.not.iss) stop 'ERROR (spect. xoff) in setup!'
 
-	read (chanin, 1001) str_line
-!	write(6,*) str_line(1:last_char(str_line))
-!	iss = rd_real(str_line,spec_zoff)
-!	if(.not.iss) stop 'ERROR (spect. zoff) in setup!'
+			read (chanin, 1001) str_line
+			write(6,*) str_line(1:last_char(str_line))
+			iss = rd_real(str_line,spec_yoff)
+			if(.not.iss) stop 'ERROR (spect. yoff) in setup!'
+
+			read (chanin, 1001) str_line
+			write(6,*) str_line(1:last_char(str_line))
+			iss = rd_real(str_line,spec_zoff)
+			if(.not.iss) stop 'ERROR (spect. zoff) in setup!'
+	endif
+	! EXIT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	read (chanin, 1001) str_line
 	write(6,*) str_line(1:last_char(str_line))
@@ -513,7 +560,7 @@ c	read (chanin,1001) str_line
 	if (.not.rd_int(str_line,tmp_int)) stop 'ERROR: gen_evts_file_flag in setup file!'
 	if (tmp_int.eq.1) gen_evts_file_flag = .true.
 
- 
+
 ! Read in flag for ionization energy loss.
 	read (chanin,1001) str_line
 	write(6,*) str_line(1:last_char(str_line))
@@ -547,30 +594,47 @@ c	read (chanin,1001) str_line
 	write(6,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,target_r)
 	if(.not.iss) stop 'please provide target radius in setup!'
-	
+
 
 
 C       For solid target
-	s_wall = 0 
+	s_wall = 0
 	s_end  = 0
 C	target_r = 0.26*2.54
 C       For extended target
 	if(extended) then
-	
+
 !       Read the end cap thickness for beer can target
 	   read (chanin,1001) str_line
 	   write(6,*) str_line(1:last_char(str_line))
 	   iss = rd_real(str_line,s_end)
 	   if(.not.iss) stop 'please provide target window thickness in setup!'
-	   
-	   
+
+
 !       Read the side wall thickness for beer can target
 	   read (chanin,1001) str_line
 	   write(6,*) str_line(1:last_char(str_line))
 	   iss = rd_real(str_line,s_wall)
 	   if(.not.iss) stop 'please provide target sidewall thickness in setup!'
-	   
+
 	endif
+!!!!!!!!!Banes additions for beamline info
+	if( input_xwidth .ne. 0.0) then
+		gen_lim(7) = input_xwidth/(2.0)
+	endif
+	if( input_ywidth .ne. 0.0) then
+		gen_lim(8) = input_ywidth/(2.0)
+	endif
+	if( input_xpos .ne. 0.0) then
+		xoff = input_xpos
+	endif
+	if( input_ypos .ne. 0.0) then
+		yoff = input_ypos
+	endif
+
+
+	write(6,*) "New beam info x pos ", xoff, " y pos", yoff
+	write(6,*) "New beam info x width ", gen_lim(7), " y width", gen_lim(8)
 
 C Set particle masses.
 	mass = me
@@ -603,6 +667,14 @@ C Initialize (open) generated events file to ID 15
 	    write(6,*) 'Taking input from file infiles/generated_events.dat!!!'
         endif
 
+
+				write(6,*) "Legnth of target ", gen_lim(6)
+
+
+
+
+
+
 C------------------------------------------------------------------------------C
 C                           Top of Monte-Carlo loop                            C
 C------------------------------------------------------------------------------C
@@ -623,12 +695,12 @@ C Units are cm.
 	  y = gauss1(3.0) * gen_lim(5) / 6.0			!beam height
 
 	  if (tarid == 5) then !hit entrance window
-	     z = -grnd()*s_end - gen_lim(6)/2.0	
+	     z = -grnd()*s_end - gen_lim(6)/2.0
 	  else if (tarid == 6) then !hit exit window
- 	     z = grnd()*s_end + gen_lim(6)/2.0         
+ 	     z = grnd()*s_end + gen_lim(6)/2.0
 c	  else if (wall == 4) then !hit single foil in the middle
 c 	     z = (grnd()-0.5)*s_end
-	  else 
+	  else
 	     z = (grnd() - 0.5) * gen_lim(6) !hit target body (gas, or solid foil..)
 	  endif
 
@@ -637,16 +709,21 @@ C	  z = grnd()*0.2-12.6
 	  zz = z        !store z value before offset
 
 C DJG Assume flat raster
-	  fr1 = 2*(grnd() - 0.5) * gen_lim(7)   !raster x
-	  fr2 = 2*(grnd() - 0.5) * gen_lim(8)   !raster y
+	  fr1 = (grnd() - 0.5) * gen_lim(7)*2   !raster x
+	  fr2 = (grnd() - 0.5) * gen_lim(8)*2   !raster y
 
-
-	  fry = -fr2  !+y = up, but fry needs to be positive when pointing down
+c	  fry = -fr2  !+y = up, but fry needs to be positive when pointing down
+c     		!+y = up, but fry needs to be positive when pointing down
+c		    !include yoff for 'raster correction'
+	   fry = -fr2 - yoff
 
 c ... Actually, it seems that +x is left based on
 c ... the transformations to spectrometer coordinates
 c ... below. (Barak S. April, 2016)
-	  frx = -fr1  !+x = right, but frx is left
+
+c	  frx = -fr1  !+x = right, but frx is left
+c    !+x = left, include xoff for raster correction
+    	frx = fr1 + xoff
 
 	  x = x + fr1
 	  y = y + fr2
@@ -662,7 +739,7 @@ C April 23, 2016 (E. Cohen): Read generated events from a file
           if(gen_evts_file_flag) then
              read(15,*) z, dpp, dxdz, dydz
              dxdz = dxdz/1000.
-             dydz = dydz/1000.   
+             dydz = dydz/1000.
 	  else
 	     dpp  = grnd()*(gen_lim_up(1)-gen_lim_down(1)) + gen_lim_down(1)
 	     dydz = grnd()*(gen_lim_up(2)-gen_lim_down(2))/1000. + gen_lim_down(2)/1000.
@@ -717,41 +794,41 @@ C Drift back to zs = 0, the plane through the target center
 C Calculate Momentum and Energy at vertex for this event ( in MeV(/c) )
 	  momentumi = p_spec*(1.+ dpp_init/100.)
 	  energyi = sqrt(momentumi**2 + m2)
-	  
+
 C Calculate multiple scattering length of target
 C-----------------------------------------------------------------------------C
-C Version for Hall A, modified by Barak Schmookler 11/6/16 (2 days before 
+C Version for Hall A, modified by Barak Schmookler 11/6/16 (2 days before
 C the apocalypse...)
 
 C       Shujie: extended target from Tritium: beer can code from SIMC
 C               9.84inch(25.01cm) target Al(X0=8.89cm radiation length) cell
 C               radius=0.26inch, side wall 0.018inch, end window 0.011 inch
-C                
+C
 C               conditions on z (z tar ini) to separate end caps and gas target
 
 
 ! ... compute distances travelled for 12GeV LHRS (RHRS)
 ! ... 16.0 mil of Al-foil for the target chamber exit foil
 ! ... 15.23" (14.79") of air between scattering chamber and HRS vacuum
-! ... 12.0 mil Kapton for spectrometer entrance (Use mylar, since 
-! .....                 X0=28.6cm for Kapton, X0=28.7cm for Mylar) 
+! ... 12.0 mil Kapton for spectrometer entrance (Use mylar, since
+! .....                 X0=28.6cm for Kapton, X0=28.7cm for Mylar)
 
 !Require  target to be bigger than...3cm
 
-	  if (extended) then   
+	  if (extended) then
 
-C       
+C
 c       s_wall = 0.018 !inch
 c       s_end = 0.011  !end caps 0.01, side 0.018 inch
-	     
+
 	     target_angle = 0
-	     
+
 	     forward_path = (gen_lim(6)/2.-zz + s_end)/abs(cos(th_ev-target_angle))
 	     side_path = (target_r+s_wall)  / abs(sin(th_ev))
-	     
+
 	     if (forward_path.lt.side_path) then
 		if(tarid.LE.4) s_Al = s_end/ abs(cos(th_ev))
-	        if(tarid == 5) s_Al = (-zz-gen_lim(6)/2.+s_end)/abs(cos(th_ev)) 
+	        if(tarid == 5) s_Al = (-zz-gen_lim(6)/2.+s_end)/abs(cos(th_ev))
 	        if(tarid == 6) s_Al = forward_path
 c	        if(wall==4) s_Al = forward_path
 
@@ -769,7 +846,7 @@ c	        if(wall==4) s_Al = forward_path
 c		if(wall==4) s_Al = side_path
 
 		s_target = side_path-s_Al
-		
+
 	     endif
 
              if(tarid==0) s_target = 0
@@ -777,22 +854,22 @@ c		if(wall==4) s_Al = side_path
 	  else
 !       Solid Target
 	     s_target = abs(gen_lim(6)/2. + zoff - z)/abs(cos_ev)
-	     
+
 
 	     musc_targ_len = abs(gen_lim(6)/2. -zz)/rad_len_cm/abs(cos_ev)
 	  endif
-	  
+
 !Scattering before spectrometer vacuum (assume 12 GeV RHRS)
 	  musc_targ_len = musc_targ_len + .016*2.54/8.89 +
      >           14.79*2.54/30420 + .012*2.54/28.7
 
 !Energy Loss for generated particle
 	  if (elossi_flag) then
-	     
+
 	     typeflag = 1
 	     s_target0 = abs(gen_lim(6)/2. - zoff + z)
 !       Energy loss before scattering
-	     call enerloss_new(s_target0,targ_rho,targ_Z,targ_A,energyi,mass,typeflag,Eloss0)    
+	     call enerloss_new(s_target0,targ_rho,targ_Z,targ_A,energyi,mass,typeflag,Eloss0)
 !       Energy loss after scattering
 
 	     call enerloss_new(s_target,targ_rho,targ_Z,targ_A,energyi,mass,typeflag,Eloss_target)
@@ -809,7 +886,7 @@ c	     write(6,*) Elossi
 	     Elossi = 0
 	  endif
 
-C Begin transporting particle.  
+C Begin transporting particle.
 	  if (ms_flag) call musc(m2,p_spec*(1.+dpps/100.),musc_targ_len,dydzs,dxdzs)
 
 C Calculate values going through spectrometer
@@ -831,7 +908,7 @@ C Transport through spectrometer
 
 ! Option for dumping all events is implemented
          if (ok_spec .or. dump_all_in_ntuple) then!Success, increment arrays
-c Hongxia---write all events	  
+c Hongxia---write all events
 c          if (.true.) then !Success, increment arrays
 !	  if (ok_spec) then !Success, increment arrays
 	    dpp_recon = dpps
@@ -845,20 +922,20 @@ c       ztar_recon = ytar_recon/sin_ts      !rough calculation of z-target
 !       Reconstruct reaction z vertex (by barak)
 !       ... We assume the following is known:
 !       ... spectrometer theta and phi
-!       ... spectrometer y,z,y'(phi_tar) offsets
+!       ... spectrometer y,z,y''(phi_tar) offsets
 !       ... raster current for each event, and target offset
 !       ... also remember +x beam points left looking downstream
-	    
+
 	    y_coff  = ytar_recon + spec_yoff
 	    y_coff = y_coff - spec_zoff*((dth_recon-spec_ypoff)/1000.)
-	    
+
 	    x_beam = frx
-        
+
 	    arg1 = atan((dth_recon-spec_ypoff)/1000.)
 	    aa1 = cos(arg1)
-	    
+
 c	    if(use_left_arm) then  ! to switch L/R arms. Run with left for now
-	    if(.true.) then 
+	    if(.true.) then
 	       aa1 = aa1 / sin(arg1 + th_spec)
 	       aa2 = cos(arg1 + th_spec)
 	       aa2 = aa2 / sin(arg1 + th_spec)
@@ -867,7 +944,7 @@ c	    if(use_left_arm) then  ! to switch L/R arms. Run with left for now
 	       aa2 = cos(arg1 - th_spec)
 	       aa2 = aa2 / sin(arg1 - th_spec)
 	    endif
-	    
+
 	    ztar_recon = -(y_coff * aa1) + (x_beam * aa2)
 
 	    !calculation of reconstructed momentum and energy ( in MeV(/c) ) at Spec.
@@ -883,7 +960,7 @@ c	    if(use_left_arm) then
 	    else
 	       cos_rec = (cos_ts+dydzs*sin_ts)/sqrt(1+dydzs**2+dxdzs**2)
 	    endif
-	    
+
 	    theta_rec = acos(cos_rec)
 	    sin_rec = sin(theta_rec)
 
@@ -897,19 +974,19 @@ c	    if(use_left_arm) then
 
 c              if(use_left_arm) then  ! to switch L/R arms. Run with left for now
 
-	       if(.true.) then 
+	       if(.true.) then
 		  s_air = 15.23*inch_cm
 	       else
 		  s_air = 14.79*inch_cm
 	       endif
-	       
+
 	       s_mylar = 0.012*inch_cm
 
 	       !Require Liquid target to be bigger than...2cm
-	       if (abs(gen_lim(6)).gt.2.) then   
+	       if (abs(gen_lim(6)).gt.2.) then
 		  forward_path = (gen_lim(6)/2. + zoff - ztar_recon) / abs(cos_rec)
 		  s_target = forward_path
-		  
+
 		  side_path = (1.5*inch_cm) / abs(sin_rec)
 		  if (forward_path.lt.side_path) then
 		     s_Al = s_Al + (0.011 / abs(cos_rec))
@@ -923,17 +1000,17 @@ c              if(use_left_arm) then  ! to switch L/R arms. Run with left for no
 		  s_target = abs(gen_lim(6)/2.)/abs(cos_rec) !Dominated by resolution... assume target mid-point
 		  musc_targ_len = s_target/rad_len_cm
 	       endif
-	       
+
 	       !Now Calculate Energy Losses
 	       typeflag = 4
-	       
+
 	       call enerloss_new(s_target,targ_rho,targ_Z,targ_A,energyf,mass,typeflag,Eloss_target)
 	       call enerloss_new(s_Al,rho_Al,Z_Al,A_Al,energyf,mass,typeflag,Eloss_Al)
 	       call enerloss_new(s_air,rho_air,Z_air,A_air,energyf,mass,typeflag,Eloss_air)
 	       call enerloss_new(s_mylar,rho_mylar,Z_mylar,A_mylar,energyf,mass,typeflag,Eloss_mylar)
-	       
+
 	       Elossf = Eloss_target + Eloss_Al + Eloss_air + Eloss_mylar
-	       
+
 	    else
 	       Elossf = 0
 	    endif
@@ -941,7 +1018,7 @@ c              if(use_left_arm) then  ! to switch L/R arms. Run with left for no
 	    !Calculate momentum and energy ( in MeV(/c) ) at Vertex
 	    energyf = energyf + Elossf
 	    momentumf = sqrt(energyf**2 - m2)
-	    
+
 c           Check event status
 	    good_evt = 0
 	    if(ok_spec) then
@@ -978,7 +1055,7 @@ C Output NTUPLE entry.
 	      hut(25) = Elossi
 	      hut(26) = Elossf
 	      hut(27) = Eloss0
-	      hut(28) = theta_rec 
+	      hut(28) = theta_rec
 	      call hfn(1,hut)
 	    endif
 
@@ -1002,9 +1079,9 @@ C Compute sums for calculating reconstruction variances.
 	       dph_var(2) = dph_var(2) + (dph_recon - dph_init)**2
 	       ztg_var(2) = ztg_var(2) + (ztar_recon - ztar_init)**2
 	    endif		!Incremented the arrays
-	 
+
 	 endif
-	   
+
 C We are done with this event, whether GOOD or BAD.
 C Loop for remainder of trials.
 
@@ -1143,7 +1220,7 @@ C =============================== Format Statements ============================
      >  i8,' stopped in Q3 EXIT',/
      >  i8,' stopped in D1 ENTRANCE',/
      >  i8,' stopped in D1 EXIT',/
-     >  )	
+     >  )
 
 1100	format('!',79('-'),/,'! ',a,/,'!')
 1200	format(/,'! ',a,' Coefficients',/,/,
