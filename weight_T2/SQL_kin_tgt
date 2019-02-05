@@ -1,0 +1,62 @@
+#!/bin/bash
+set -x
+
+if [[ $# -eq 0 ]]
+then
+	echo "what target would you like to use?"
+	read Target
+else 
+	Target=$1
+fi
+
+if [[ $# -lt 2 ]]
+then
+	echo "what kinematic would you like to look at?"
+	read kin
+else
+	kin=$2
+fi
+
+if [ "$Target" == "D2" ]
+then
+        echo "D2"
+        tarid=2
+elif [ "$Target" == "H3" ]
+then
+        echo "H3"
+        tarid=3
+
+elif [ "$Target" == "He3" ]
+then
+        echo "He3"
+        tarid=4
+
+elif [ "$Target" == "Carbon" ]
+then
+        echo "foil"
+        tarid=7
+
+elif [ "$Target" == "optics" ]
+then
+        echo "optics"
+        tarid=8
+else
+        echo "dummy"
+        tarid=0
+fi
+
+
+runs=($(mysql -B --user=triton-user -p3He3Hdata -hhalladb triton-work -e"select run_number from MARATHONrunlist where target='${Target}' and Kinematic='${kin}' "))
+
+echo ${#runs[@]}
+
+while [[ $i -lt ${#runs[@]}-1 ]]
+do	
+	i=$(( $i+1 ))
+	j=$(( $i ))
+	echo ${runs[${j}]}
+	
+	run=${runs[${j}]}
+	sh ./T2_MC "${Target}" "${kin}" "${run}" "${tarid}" 
+done
+

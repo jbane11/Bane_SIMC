@@ -10,8 +10,8 @@ doall=1
 rc=1
 redoall=1
 
-if [[ "$#" -ge "0" ]] 
-then 
+if [[ "$#" -ge "0" ]]
+then
 	Target=$1
 	if [[ ${Target} == "-h" || ${Target} == "help"  ]]
 	then
@@ -24,8 +24,8 @@ then
 	fi
 fi
 
-if [[ "$#" -ge "4" ]] 
-then 
+if [[ "$#" -ge "4" ]]
+then
 	Target=$1
 	if [[ ${Target} == "-h" || ${Target} == "help"  ]]
 	then
@@ -48,12 +48,12 @@ then
 	then
 		rc=$6
 	fi
-else 
-	echo "Please enter Target " 
+else
+	echo "Please enter Target "
 	read Target
 	echo "Please enter run number"
 	read runnum
-	echo "Please enter kin # " 
+	echo "Please enter kin # "
 	read kin
 	echo "Please enter tgt ID (D2=2, H3=3,He3=4)"
 	read ID
@@ -72,14 +72,14 @@ then
 			exit
 		else
 			rm -v rootfiles/mc${runnum}_*.root
-		fi	
+		fi
 	fi
 fi
 
 
-if [ -f mcrun_info/input.dat ] 
+if [ -f mcrun_info/input.dat ]
 then
-	echo "Linking the correct mc info file" 
+	echo "Linking the correct mc info file"
 	#ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
 else
 	if (( ${doall} ))
@@ -90,7 +90,7 @@ else
 		#ln -sf mcrun_info/input_"$Target"_kin"$kin".dat input.dat
 		#cd ..
 	else
-		echo "Please create input_"$Target"_kin"$kin".dat in /mcrun_info" 
+		echo "Please create input_"$Target"_kin"$kin".dat in /mcrun_info"
 		exit
 	fi
 fi
@@ -113,6 +113,11 @@ elif [ "$Target" == "carbon_foil" ]
 then
         echo "foil"
         tarid=7
+elif [ "$Target" == "C12" ]
+then
+        echo "foil"
+				Target="carbon_foil"
+        tarid=7
 
 elif [ "$Target" == "optics" ]
 then
@@ -128,21 +133,21 @@ then
 	ID=$tarid
 fi
 
-if [ -f datarun_info/run${runnum}.in ] 
+if [ -e "${weightdir}/datarun_info/run${runnum}.in" ]
 then
-	echo "Linking the correct data run file" 
-	ln -sf datarun_info/run${runnum}.in reconmc.in
-	
-else	
+	echo "Linking the correct data run file"
+	ln -sf datarun_info/run${runnum}.in ${weightdir}/reconmc.in
+
+else
 	if (( ${doall} ))
 	then
 		echo "Making datrun_info"
 		cd "${weightdir}/datarun_info"
 		sh gen_datarun ${runnum} ${kin} ${ID}
 		cd ${cdir}
-		ln -sf datarun_info/run${runnum}.in reconmc.in 
+	ln -sf datarun_info/run${runnum}.in ${weightdir}/reconmc.in
 	else
-		echo "Please create run_${runnum}.in in /datarun_info" 
+		echo "Please create run_${runnum}.in in /datarun_info"
 		exit
 	fi
 fi
@@ -154,33 +159,33 @@ for x in $tarid 5 6
 do
 	ID=$x
 
-	if [[ -e "${gendir}/worksim/${Target}_${runnum}_${ID}.rzdat" ]] 
+	if [[ -e "${gendir}/worksim/${Target}_${runnum}_${ID}.rzdat" ]]
 	then
-		if [ "${doall}" == 1 -a "${rc}" == 1 ] 
+		if [ "${doall}" == 1 -a "${rc}" == 1 ]
 		then
 			cd $gendir
 			rm -v worksim/${Target}_${runnum}_${ID}.rzdat
 			sh generate ${Target} ${runnum} ${ID} ${kin}
 			cd $weightdir
-			echo "Linking the correct rzdat run file" 
+			echo "Linking the correct rzdat run file"
 			ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
 		else
-			echo "Linking the correct rzdat run file" 
+			echo "Linking the correct rzdat run file"
 			ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
 		fi
 	else
-		if [ "${doall}" == 1 ] 
+		if [ "${doall}" == 1 ]
 		then
 			cd $gendir
 			sh generate ${Target} ${runnum} ${ID} ${kin}
 			cd $weightdir
-			echo "Linking the correct rzdat run file" 
+			echo "Linking the correct rzdat run file"
 			ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
 		else
 			echo "Please generate the rzdat file needed"
 			exit
 		fi
-	
+
 	fi
 
 
@@ -204,7 +209,7 @@ do
 		if (( ${doall} ))
 		then
 			echo "Will make a cross section table for this run"
-			cd $tabledir	
+			cd $tabledir
 			sh CS ${tgt} ${kin} ${ID}
 			cd $weightdir
 			echo "Making a link to the cross section table"
@@ -223,9 +228,9 @@ do
 
 	RUN=${Target}_kin${kin}
 
-	./recon_mc ${runnum} ${ID} 
+	./recon_mc ${runnum} ${ID}
 	echo " "
-	echo "Just finish  $RUN!!!" 
+	echo "Just finish  $RUN!!!"
 	echo " "
 	echo " Let's make those ntuples root files and move them to the proper places!!!"
 	echo " "
@@ -239,27 +244,42 @@ done
 
 analyzer -b -l -q "merge.C(${runnum})"
 #rm -v rootfiles/mc${runnum}_*.root
+if [ -e output/stdout_${runnum}.out ]
+then
+	rm -fv output/stdout_${runnum}.out
+fi
 
 elif [[ ${ID} == 7 ]]
 then
-	
-	tgt=C12
-	if [ -e ../phase_space_fall16/worksim/carbon_foil_${runnum}_${ID}.rzdat -o ${rc}==1 ] 
+	echo "check check"
+	if [ -e ${weightdir}/datarun_info/run${runnum}.in ]
 	then
-		if (( ${doall} )) 
+		echo "Linking the correct data run file"
+		ln -sf datarun_info/run${runnum}.in ${weightdir}/reconmc.in
+	else
+		echo "Making datrun_info"
+		cd "${weightdir}/datarun_info"
+		sh gen_datarun ${runnum} ${kin} ${ID}
+		cd ${cdir}
+		ln -sf datarun_info/run${runnum}.in ${weightdir}/reconmc.in
+  fi
+	tgt=C12
+	if [ -e ../phase_space_fall16/worksim/carbon_foil_${runnum}_${ID}.rzdat -o ${rc}==1 ]
+	then
+		if (( ${doall} ))
 		then
 			cd $gendir
 			sh generate carbon_foil ${runnum} ${ID} ${kin}
 			cd $weightdir
-			echo "Linking the correct rzdat run file" 
+			echo "Linking the correct rzdat run file"
 			ln -sf ../phase_space_fall16/worksim/carbon_foil_${runnum}_${ID}.rzdat run.rzdat
 		else
 			echo "Please generate the rzdat file needed"
 			exit
 		fi
 	else
-	
-		echo "Linking the correct rzdat run file" 
+
+		echo "Linking the correct rzdat run file"
 		ln -sf ../phase_space_fall16/worksim/${Target}_${runnum}_${ID}.rzdat run.rzdat
 	fi
 
@@ -271,7 +291,7 @@ then
 		if (( ${doall} ))
 		then
 			echo "Will make a cross section table for this run"
-			cd $tabledir	
+			cd $tabledir
 			sh CS ${tgt} ${kin} ${ID}
 			cd $weightdir
 			echo "Making a link to the cross section table"
@@ -290,9 +310,9 @@ then
 
 	RUN=${Target}_kin${kin}
 
-	./recon_mc ${runnum} ${ID} 
+	./recon_mc ${runnum} ${ID}
 	echo " "
-	echo "Just finish  $RUN!!!" 
+	echo "Just finish  $RUN!!!"
 	echo " "
 	echo " Let's make those ntuples root files and move them to the proper places!!!"
 	echo " "
@@ -307,4 +327,3 @@ then
 	echo "optics not ready"
 	exit
 fi
-
